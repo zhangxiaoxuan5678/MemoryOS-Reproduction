@@ -1,0 +1,17 @@
+
+# Local API configuration
+.env
+
+# Generated local execution records and Python caches
+runs/
+__pycache__/
+*.pyc
+
+# Credentials, virtual environments and local OS/editor state
+.env.*
+!.env.example
+*.pem
+*.key
+.venv/
+venv/
+.DS_Store

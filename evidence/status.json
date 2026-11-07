@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "answers": 225,
+  "requests_started": 450,
+  "known_usage": {
+    "prompt_tokens": 2264622,
+    "completion_tokens": 2590,
+    "total_tokens": 2267212
+  },
+  "requests_with_unknown_usage": 0,
+  "estimated_peak_cny": "4.549964",
+  "unsettled_reserved_cny": "0.000000",
+  "budget_cny": "20.000000",
+  "elapsed_seconds": 553.4794627919327
+}

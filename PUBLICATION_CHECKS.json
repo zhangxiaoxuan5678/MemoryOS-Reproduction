@@ -1,0 +1,23 @@
+{
+  "date_local": "2026-11-07",
+  "paid_api_requests_during_submission_preparation": 0,
+  "publication_history": "new independent main branch; no upstream history copied",
+  "checks": {
+    "archive_hashes_and_exact_F1_recomputation": "pass",
+    "restore_from_public_archives": "pass",
+    "original_score_command_in_publication_copy": "pass",
+    "prepare_nine_independent_copies": "pass",
+    "evaluation_preview": "preview_no_api",
+    "evaluation_offline_tests_without_downloaded_tokenizer": "6 passed",
+    "secret_scan_including_archive_members_and_new_history": "pass",
+    "env_content_read": false,
+    "env_tracked": false,
+    "original_model_weights_not_in_git": true
+  },
+  "notes": [
+    "The original research repository retains inherited suspect credential history; do not push it.",
+    "Publication author is a neutral label using example.invalid, not a configured GitHub identity.",
+    "Fresh pip installation has not been tested.",
+    "The original invalid-escape prompt warning is retained without changing prompts."
+  ]
+}

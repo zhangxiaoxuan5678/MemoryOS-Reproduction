@@ -1,0 +1,66 @@
+{
+  "status": "complete_snapshot_independently_verified",
+  "pages": 215,
+  "source_turns": 419,
+  "sessions": 19,
+  "requests_cumulative": 1052,
+  "requests_this_resume": 355,
+  "usage_cumulative": {
+    "prompt_tokens": 351383,
+    "completion_tokens": 173361,
+    "total_tokens": 524744
+  },
+  "usage_this_resume": {
+    "prompt_tokens": 162531,
+    "completion_tokens": 98463,
+    "total_tokens": 260994
+  },
+  "estimated_peak_cny": "2.089654",
+  "estimated_peak_cny_this_resume": "1.112766",
+  "highest_exposure_with_inflight_cny": 4.23969,
+  "unsettled_reserved_cny": 0,
+  "authorized_retries": [
+    [
+      334,
+      333
+    ],
+    [
+      409,
+      408
+    ],
+    [
+      698,
+      697
+    ]
+  ],
+  "automatic_retries": 0,
+  "api_errors": 0,
+  "unknown_usage_requests": 0,
+  "finish_reasons": {
+    "stop": 1049,
+    "length": 3
+  },
+  "this_resume_truncations": 0,
+  "original_ledger_prefixes_preserved": true,
+  "snapshot_read_only": true,
+  "snapshot_manifest_sha256": "501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1",
+  "snapshot_memory_files_sha256": {
+    "short.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "mid.json": "bf4b452fa32b247f7923243f15c7fb3324e1c86c5c0639fb4065e11b143ca0a4",
+    "long.json": "2621821158975e96962693dadd296c8bdb717ebf35a64dc3abdd79aa6d82e483",
+    "updater.json": "6792f96f514642fcfbe5d4abff008313312e7bbbb28560b9918663d560433c2e"
+  },
+  "provenance_files_sha256": {
+    "provenance-correction-meta300.json": "3b14f9dfc048f8de5d82359939fe6f16e46be7508ebad87e2e1ee41f27677d33",
+    "provenance-correction-profile16000.json": "010e214daa5ff1f9c87bb4ed7ffcb2fdf6f0ab5b742eab6ce2ed2a94fc82da90",
+    "provenance-correction-profile4000.json": "9609208b57e753b11e9acac1eb85fdcb6914a3c2afc1d94b6fc0a7e836d492c5",
+    "provenance-request408-offline.json": "449b4434c17a7c9ae20086a9204cc6f5cdbc4eeb9f0e5da1d3c74543e7b0ec19",
+    "provenance-request408-offline.md": "26c88162b5074e3c3a7db67dc2bc1158860aa961015411bd09fde0a72335da94"
+  },
+  "snapshot_path": "/Users/caca/Documents/MemoryOS-Reproduction/MemoryOS/runs/formal-conv26-v1/snapshot",
+  "active_seconds_this_resume": 757.814,
+  "active_seconds_total": 1705.708,
+  "runtime_commit": "1cab9939d823ae6fd29dcc7c941783d86f9adff7",
+  "profile_output_tokens_max": 7223,
+  "evaluation_run": false
+}

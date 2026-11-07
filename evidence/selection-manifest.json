@@ -1,0 +1,51 @@
+{
+  "kind": "offline_preparation_not_memory_build",
+  "sample_id": "conv-26",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "git_commit": "16a477b00da6c9d19df12021498b02cbf9244ecb",
+  "converter_sha256": "7877631b7d3420df1e85f43ee98544a582a0cbbca1e76be0e7ef0403c874f241",
+  "source_turns": 419,
+  "pages": 215,
+  "single_sided_pages": 11,
+  "question_count": 25,
+  "categories": {
+    "2": 6,
+    "3": 6,
+    "1": 6,
+    "4": 7
+  },
+  "selected_qa_indices_zero_based": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    11,
+    13,
+    14,
+    15,
+    22,
+    27,
+    30,
+    42,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88
+  ],
+  "selection": "First 6 questions in each category 1-3 and first 7 in category 4, then original index order; category 5 excluded",
+  "files_sha256": {
+    "build_input/conversation.json": "5827e7ec11c8ec8bf20cdbd380b0b59e0e31c58dfd1251bb01d42050e6b3a1a4",
+    "build_input/pages.json": "b7ae72c124e0df9b4e1ffa36e2c526af60db1e4aa2cf1bcbc9ef6ebf8a308843",
+    "questions.json": "d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7",
+    "scoring_only/references.json": "43f641df66b3b3e59a9f9f01fc0b4dea6875b90ad7daea3a51a83e4531859da5"
+  }
+}

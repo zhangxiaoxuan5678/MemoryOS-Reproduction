@@ -1,0 +1,37 @@
+{
+  "date_local": "2026-11-07",
+  "timezone": "Asia/Hong_Kong",
+  "scope": "local final GitHub submission preparation; no API requests",
+  "checks": {
+    "eval_syntax": "pass",
+    "config_import_embedding_mock": "pass",
+    "lossless_dataset_and_selection": "pass",
+    "build_fault_injection_tests": 11,
+    "evaluation_mock_tests": 6,
+    "pip_check": "no broken requirements",
+    "requirements_match_installed_versions": true,
+    "published_evidence_hashes_and_exact_score_recomputation": "pass",
+    "working_tree_and_zip_secret_scan": "pass",
+    "env_ignored": true,
+    "env_tracked": false,
+    "env_content_read": false
+  },
+  "direct_dependency_versions": {
+    "numpy": "1.26.4",
+    "faiss-cpu": "1.15.1",
+    "torch": "2.15.0",
+    "sentence-transformers": "5.0.0",
+    "transformers": "4.57.6",
+    "openai": "3.46.0",
+    "tiktoken": "0.14.0",
+    "python-dotenv": "1.2.4",
+    "huggingface-hub": "0.36.2"
+  },
+  "publication_history_policy": "new clean publication history; original research history retained locally because upstream test.py contains suspected hardcoded credential",
+  "limitations": [
+    "fresh dependency installation not tested",
+    "heuristic secret scanning cannot guarantee absence of every secret format",
+    "original prompt invalid-escape DeprecationWarning retained to avoid changing prompts",
+    "no new paid experiments or model downloads"
+  ]
+}

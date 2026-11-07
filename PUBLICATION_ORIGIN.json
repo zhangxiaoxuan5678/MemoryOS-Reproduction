@@ -1,0 +1,9 @@
+{
+  "kind": "clean_publication_copy",
+  "local_research_submission_commit": "878d344d87791cdd1e44bbd17d53a89104818687",
+  "upstream_commit": "587ed7755c7aed179965792830ff1b5ad9a6fa92",
+  "evaluation_runtime_commit": "fc48ea6fee9f013fe2476666611edfdb78786023",
+  "history_reinitialized_for_security": true,
+  "original_history_retained_locally": true,
+  "env_and_runs_copied": false
+}

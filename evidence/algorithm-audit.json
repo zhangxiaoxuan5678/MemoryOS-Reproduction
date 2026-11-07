@@ -1,0 +1,12 @@
+{
+  "original_commit": "587ed7755c7aed179965792830ff1b5ad9a6fa92",
+  "ast_identical": {
+    "eval/retrieval_and_answer.py:retrieve": true,
+    "eval/mid_term_memory.py:search_sessions_by_summary": true,
+    "eval/long_term_memory.py:search_knowledge": true,
+    "eval/evalution_loco.py:simple_tokenize": true,
+    "eval/evalution_loco.py:calculate_f1": true
+  },
+  "offline_runtime_issue": "First diagnostic process exited 139 while mixing FAISS/embedding native libraries; stable after matching utils-before-FAISS import order and setting FAISS/OMP threads to 1. No algorithm changes.",
+  "new_paid_api_calls": 0
+}

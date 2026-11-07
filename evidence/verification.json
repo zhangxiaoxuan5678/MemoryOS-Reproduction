@@ -1,0 +1,51 @@
+{
+  "status": "complete_independently_verified",
+  "snapshot_manifest_sha256": "501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1",
+  "questions_sha256": "d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7",
+  "trial_count": 9,
+  "answers": 225,
+  "requests": 450,
+  "fresh_unique_request_operations": 450,
+  "unique_response_ids": 450,
+  "request_order": "question-round-robin; repeat1 5/10/20,repeat2 10/20/5,repeat3 20/5/10",
+  "valid_answers": 225,
+  "failed_answers": 0,
+  "truncated_responses": 0,
+  "unknown_usage_requests": 0,
+  "automatic_retries": 0,
+  "usage": {
+    "prompt_tokens": 2264622,
+    "completion_tokens": 2590,
+    "total_tokens": 2267212
+  },
+  "by_stage_usage": {
+    "retrieval_keywords": {
+      "prompt_tokens": 12141,
+      "completion_tokens": 1523,
+      "total_tokens": 13664
+    },
+    "answer": {
+      "prompt_tokens": 2252481,
+      "completion_tokens": 1067,
+      "total_tokens": 2253548
+    }
+  },
+  "estimated_peak_all_miss_cny": "4.549964",
+  "usage_cache_aware_peak_estimate_cny": 1.24514528,
+  "cached_input_tokens": 1686132,
+  "uncached_input_tokens": 578490,
+  "highest_estimated_spend_plus_reserved_cny": 4.643972,
+  "unsettled_reservation_cny": 0,
+  "full_inputs_not_trimmed": true,
+  "all450_reservations_recomputed_and_covered": true,
+  "maximum_server_minus_offline_input_tokens": 2,
+  "all9_memory_copies_and_source_snapshot_unchanged": true,
+  "elapsed_seconds": 553.4794627919327,
+  "group_active_seconds": {
+    "5": 178.3910890398547,
+    "10": 187.65183736965992,
+    "20": 186.3439064132981
+  },
+  "runtime_commit": "fc48ea6fee9f013fe2476666611edfdb78786023",
+  "build_ledger_unchanged_requests": 1052
+}

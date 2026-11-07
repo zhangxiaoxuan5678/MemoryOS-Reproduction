@@ -1,0 +1,29 @@
+{
+  "kind": "single_shared_snapshot_for_all_future_groups",
+  "snapshot_path": "runs/formal-conv26-v1/snapshot",
+  "manifest_sha256": "501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1",
+  "required_coverage": {
+    "unique_pages": 215,
+    "source_turns": 419
+  },
+  "build_runtime_commit": "1cab9939d823ae6fd29dcc7c941783d86f9adff7",
+  "requested_model": "deepseek-flash",
+  "embedding_model": "all-MiniLM-L6-v2",
+  "embedding_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "shared_runtime_adjustments": {
+    "meta_summary_output_tokens": [
+      100,
+      300
+    ],
+    "profile_merge_output_tokens": [
+      2000,
+      4000,
+      16000
+    ]
+  },
+  "all_groups_must_use_identical_snapshot": true,
+  "no_rebuild_per_group": true,
+  "evaluation_started": true,
+  "profile_redundancy_resolved": false,
+  "first_full_evaluation_complete": true
+}

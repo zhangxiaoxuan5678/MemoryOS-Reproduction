@@ -1,0 +1,235 @@
+[
+  {
+    "question_id": "conv-26:qa:0",
+    "qa_index_zero_based": 0,
+    "category": 2,
+    "answer": "7 May 2023",
+    "evidence": [
+      "D1:3"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:1",
+    "qa_index_zero_based": 1,
+    "category": 2,
+    "answer": 2022,
+    "evidence": [
+      "D1:12"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:2",
+    "qa_index_zero_based": 2,
+    "category": 3,
+    "answer": "Psychology, counseling certification",
+    "evidence": [
+      "D1:9",
+      "D1:11"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:3",
+    "qa_index_zero_based": 3,
+    "category": 1,
+    "answer": "Adoption agencies",
+    "evidence": [
+      "D2:8"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:4",
+    "qa_index_zero_based": 4,
+    "category": 1,
+    "answer": "Transgender woman",
+    "evidence": [
+      "D1:5"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:5",
+    "qa_index_zero_based": 5,
+    "category": 2,
+    "answer": "The sunday before 25 May 2023",
+    "evidence": [
+      "D2:1"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:6",
+    "qa_index_zero_based": 6,
+    "category": 2,
+    "answer": "June 2023",
+    "evidence": [
+      "D2:7"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:7",
+    "qa_index_zero_based": 7,
+    "category": 1,
+    "answer": "Single",
+    "evidence": [
+      "D3:13",
+      "D2:14"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:8",
+    "qa_index_zero_based": 8,
+    "category": 2,
+    "answer": "The week before 9 June 2023",
+    "evidence": [
+      "D3:1"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:9",
+    "qa_index_zero_based": 9,
+    "category": 2,
+    "answer": "The week before 9 June 2023",
+    "evidence": [
+      "D3:11"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:11",
+    "qa_index_zero_based": 11,
+    "category": 1,
+    "answer": "Sweden",
+    "evidence": [
+      "D3:13",
+      "D4:3"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:13",
+    "qa_index_zero_based": 13,
+    "category": 1,
+    "answer": "counseling or mental health for Transgender people",
+    "evidence": [
+      "D4:13",
+      "D1:11"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:14",
+    "qa_index_zero_based": 14,
+    "category": 3,
+    "answer": "Likely no",
+    "evidence": [
+      "D4:15",
+      "D3:5"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:15",
+    "qa_index_zero_based": 15,
+    "category": 1,
+    "answer": "pottery, camping, painting, swimming",
+    "evidence": [
+      "D5:4",
+      "D9:1",
+      "D1:12",
+      "D1:18"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:22",
+    "qa_index_zero_based": 22,
+    "category": 3,
+    "answer": "Yes, since she collects classic children's books",
+    "evidence": [
+      "D6:9"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:27",
+    "qa_index_zero_based": 27,
+    "category": 3,
+    "answer": "LIkely no; though she likes reading, she wants to be a counselor",
+    "evidence": [
+      "D7:5",
+      "D7:9"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:30",
+    "qa_index_zero_based": 30,
+    "category": 3,
+    "answer": "Likely no, she does not refer to herself as part of it",
+    "evidence": []
+  },
+  {
+    "question_id": "conv-26:qa:42",
+    "qa_index_zero_based": 42,
+    "category": 3,
+    "answer": "National park; she likes the outdoors",
+    "evidence": [
+      "D10:12",
+      "D10:14"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:82",
+    "qa_index_zero_based": 82,
+    "category": 4,
+    "answer": "mental health",
+    "evidence": [
+      "D2:2"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:83",
+    "qa_index_zero_based": 83,
+    "category": 4,
+    "answer": "self-care is important",
+    "evidence": [
+      "D2:3"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:84",
+    "qa_index_zero_based": 84,
+    "category": 4,
+    "answer": "by carving out some me-time each day for activities like running, reading, or playing the violin",
+    "evidence": [
+      "D2:5"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:85",
+    "qa_index_zero_based": 85,
+    "category": 4,
+    "answer": "researching adoption agencies",
+    "evidence": [
+      "D2:8"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:86",
+    "qa_index_zero_based": 86,
+    "category": 4,
+    "answer": "LGBTQ+ individuals",
+    "evidence": [
+      "D2:12"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:87",
+    "qa_index_zero_based": 87,
+    "category": 4,
+    "answer": "because of their inclusivity and support for LGBTQ+ individuals",
+    "evidence": [
+      "D2:12"
+    ]
+  },
+  {
+    "question_id": "conv-26:qa:88",
+    "qa_index_zero_based": 88,
+    "category": 4,
+    "answer": "creating a family for kids who need one",
+    "evidence": [
+      "D2:14"
+    ]
+  }
+]

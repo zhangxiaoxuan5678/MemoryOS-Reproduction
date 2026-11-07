@@ -1,0 +1,22 @@
+{
+  "kind": "public_submission_evidence",
+  "upstream_commit": "587ed7755c7aed179965792830ff1b5ad9a6fa92",
+  "evaluation_runtime_commit": "fc48ea6fee9f013fe2476666611edfdb78786023",
+  "files_sha256": {
+    "algorithm-audit.json": "04a0ff2a74f56ff6d10213c5c8133edb5f7094c5f19796fb9761b456c6801af2",
+    "build-ledger.zip": "826c17494941aa432d6e9a1096c6f2737b3a7f5052c28d8b5e81386de80b550d",
+    "build-verification.json": "3b8dc51e1a6ac7b3f53e4d5078ece8b2f8f9bb4e25edc229d2ac667f4331d573",
+    "build_input/conversation.json": "5827e7ec11c8ec8bf20cdbd380b0b59e0e31c58dfd1251bb01d42050e6b3a1a4",
+    "build_input/pages.json": "b7ae72c124e0df9b4e1ffa36e2c526af60db1e4aa2cf1bcbc9ef6ebf8a308843",
+    "evaluation-config.json": "6af10e45407ce7204faa562594f0ce015b282692ef7cc6bc75d8c4e9de492717",
+    "evaluation-raw.zip": "a718e681bb97abbef9d3b0b053b64727950f993d2e2ad4a89f33c1c0dc9562b6",
+    "input-budget-audit.json": "3c3ce8f1d9a9c0272057c635806addcc091c4eaf0c6b19e21e6051526320e427",
+    "questions.json": "d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7",
+    "scores.json": "8959ad4bf25e0f20d48acc70cd7eeebefc5aa5c29022b8047b2f4e00c463ccaf",
+    "scoring_only/references.json": "43f641df66b3b3e59a9f9f01fc0b4dea6875b90ad7daea3a51a83e4531859da5",
+    "selection-manifest.json": "d51050ee91252ebd1844ac332195193514487f5bbdee04a83f3f4ef7c03cf7ef",
+    "snapshot.zip": "9f710fd82a8845ff2fa6ab57cb22e2c59722ae4220920760e50f7bc1f1735901",
+    "status.json": "6de1ceeb41608d37bab7a537d7139a96721d0a5d34cae6a9fae2d1a8db41aef0",
+    "verification.json": "6bf18e65bfb966e92a1b3a502f1758585766c02f120d873853b637fe83e4e720"
+  }
+}
