@@ -1,58 +1,60 @@
-# MemoryOS 单样本小规模实验方案（离线准备版）
+# MemoryOS single-sample study plan
 
-状态：固定数据、完整性检查及真实建库已完成。统一快照覆盖215页/419条发言，见STUDY_SNAPSHOT.json。原25题正式评测已获授权并完成225回答，结果见EVALUATION_RESULTS.md。本文件不构成付费授权。
+**Status:** data preparation, integrity checks, construction and evaluation are complete. The shared snapshot covers 215 pages / 419 utterances, pinned by `STUDY_SNAPSHOT.json`. The original 25-question evaluation produced 225 answers; see [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md). This document records the original design and does not authorize further paid execution.
 
-## 固定数据与信息边界
+## Fixed data and information boundaries
 
-- 样本：locomo10.json 的 `conv-26`，全部 19 个 session、419 条发言。
-- 修复后：215 页，其中 11 页只有一方发言。页保留 session、日期、图片描述及原始 dia_id/索引。
-- 每个 session 单独配对，不跨 session 覆盖；连续同说话人也不会覆盖发言。
-- 原完整配对页仍用原来的 User 文本做主题摘要；仅对没有 User 文本的页，将现存 Assistant 文本用于主题分析。这是对原实现的完整性修复，所有正式实验组必须共用。
-- 建库输入限定为 `build_input/`，不允许访问 `questions.json` 或 `scoring_only/`。
-- 25 个问题：类别 1、2、3 各选原顺序前 6 题，类别 4 选前 7 题，再按原 QA 索引排序。排除类别 5。
-- 这是固定、按类别取样的探索性子集，不能代表整个 LoCoMo；没有随机抽样或结果择优。
-- `questions.json` 只包含 question_id 和 question；`scoring_only/references.json` 单独保存答案、类别和 evidence，生成答案后再关联。
-- `manifest.json` 固定原数据 SHA-256、转换器哈希、题目索引、类别数、导出文件哈希和代码提交。
+- Sample: `conv-26` in `locomo10.json`, including all 19 sessions and 419 utterances.
+- Corrected conversion: 215 pages, including 11 one-sided pages. Pages retain session, date, image descriptions and original `dia_id` / indices.
+- Pairing is separate within each session. Neither session boundaries nor consecutive turns by one speaker overwrite utterances.
+- Complete two-sided pages retain the original User text as topic-summary input. An Assistant-only page uses its available Assistant text. This completeness correction is shared by all groups.
+- Construction reads only `build_input/`, without access to `questions.json` or `scoring_only/`.
+- Fixed questions: first six in original order from each of categories 1, 2 and 3, and first seven from category 4, then sorted by original QA index. Category 5 is excluded.
+- This is a fixed category-stratified exploratory subset, not a random or outcome-selected sample and not representative of all LoCoMo.
+- `questions.json` contains only `question_id` and `question`. `scoring_only/references.json` separately stores answers, categories and evidence, joined only after generation.
+- `manifest.json` records source-data SHA-256, converter hash, question indices, category counts, exported-file hashes and code commit.
 
-## 建库及快照约束（实现见 BUILD_GUIDE.md）
+## Construction and snapshot requirements
 
-1. 从本次已冻结的 215 页输入出发，使用独立目录，不读旧测试库。
-2. 所有请求共享持久预算账本，SDK 重试为 0；每次请求前计数、先落日志，达到上限即停止。失败请求同样计数，用量未知时单列，不写成零消耗。
-3. 页面完成后记录检查点和页 ID 覆盖情况。摘要结构无效、空主题、页面覆盖不足时不得宣称建库完成；先保留错误，不静默忽略。
-4. 完整建库后才冻结快照。快照清单记录短/中/长期记忆文件 SHA-256、原模型 revision、配置模型和思考模式、代码提交、全部页覆盖及真实调用数。
-5. 快照验收通过后，正式评测直接加载，绝不重新建库；每组用独立副本，避免访问计数等状态互相污染。
-6. 不记录密钥；base URL 可保留提供商标识替代。真实问题、提示词、响应、usage 和错误分别保留，以便审查。
+Implementation details are in [BUILD_GUIDE.md](BUILD_GUIDE.md).
 
-## 唯一实验变量
+1. Start from the frozen 215-page inputs in an independent directory, without reading old test memory.
+2. Share a persistent budget ledger across requests, with SDK retries set to 0. Count and log each attempt before sending; stop at limits. Failed attempts still count. Unknown usage is recorded separately, not as zero consumption.
+3. After each page, save its checkpoint and coverage IDs. Invalid summary structure, empty topics or incomplete coverage cannot be treated as a successful build. Preserve the error rather than silently skipping it.
+4. Freeze a snapshot only after full construction. Record hashes of short-/mid-/long-term memory, original model revision, configured model and thinking mode, code commit, full page coverage and real call counts.
+5. After snapshot acceptance, evaluation loads it directly without rebuilding. Every run uses an independent copy so access counts and other state cannot contaminate another run.
+6. Do not record keys. A provider identifier may replace the base URL. Retain questions, prompts, responses, usage and errors in their appropriate records for review.
 
-建议比较 `queue_capacity = 5 / 10 / 20`，准确名称为“中期记忆页数上限”。
+## Only controlled experimental variable
 
-所有组固定同一模型与思考模式、嵌入模型、建库快照、25 道题、候选段 top_k=5、检索阈值 0.1、长期知识 top_k=10、温度、提示词及评分函数。
+Compare `queue_capacity = 5 / 10 / 20`, accurately described as the **maximum number of mid-term memory pages**.
 
-按用户最新要求，正式评测保留原检索算法：不冻结或共享检索结果、不增加去重、不修改id(page)同分排序。每个独立运行从同一完整快照副本开始，每题重新调用一次关键词提取、再生成新答案。仅在统计中记录实际页数、唯一页数和内容哈希；这些统计不反向改变检索。25题离线候选段阈值证书已证明关键词不会改变本题单的候选段成员，但正式流程仍照原实现调用关键词模型。原同分处理与模型随机性作为限制记录，由三次运行结果反映，不能将非受控噪声误称为额外人为实验变量。
+All groups share the same model/thinking mode, embedding model, construction snapshot, 25 questions, candidate-session `top_k=5`, retrieval thresholds of `0.1`, long-term knowledge `top_k=10`, temperatures, prompts and scorer.
 
-每题记录设定容量、实际唯一页数、输入 tokens 和答案。若三组实际页数/内容一致，应如实报告变量未有效作用，不能宣称容量没有影响。保留仓库简化 F1 的明确标签，不将它等同于官方评分。
+The final design retains the original retrieval algorithm: no frozen/shared retrieval results, added deduplication or changed `id(page)` tie sorting. Every independent run starts from a copy of the same complete snapshot. Each question makes a fresh keyword call and then generates a new answer. Actual pages, unique pages and content hashes are observed without changing retrieval. An offline candidate-threshold certificate shows that keywords cannot alter candidate membership for these 25 questions, but the formal flow still calls the original keyword model. Original tie handling and model randomness remain limitations reflected in repeated results; uncontrolled noise is not an additional deliberately changed variable.
 
-## 建库调用量：只作静态规划，不是实际用量
+Record configured capacity, actual unique pages, input tokens and answer per question. If all groups retrieve identical contents, report that the variable did not change actual retrieval rather than conclude capacity has no effect. Label the repository's simplified F1 explicitly; it is not official LoCoMo scoring.
 
-215 页全部有效、流程正常推进时，基础调用为：
+## Historical static construction-call plan
 
-- 连续性判断：214 次；
-- 元摘要：215 次；
-- 多主题摘要：215 次；
-- 合计基础调用：644 次。
+For 215 valid pages progressing normally, the basic calls were estimated as:
 
-此外，新建段时有关键词提取，长期画像触发时有分析/合并。次数依赖模型输出与分段状态。原摘要提示词要求最多两个主题，但代码没有严格校验主题数，不能仅凭提示词声称存在可靠的总调用上界。正式执行器必须设置实际硬上限并校验输出。
+- Continuity checks: 214.
+- Metadata summaries: 215.
+- Multi-topic summaries: 215.
+- Basic total: 644.
 
-正式建库可能需要数百至上千请求，明显超出已用 8 次的试跑范围。建库与评测的付费预算将分别提出，在执行器和调用限制可检查后再请求确认；当前不运行。
+New sessions additionally need keyword extraction, and triggered long-term profiles need analysis/merging. Counts depend on model outputs and segmentation state. Although the original summary prompt requests at most two topics, code does not strictly enforce the count. The prompt alone therefore provides no reliable total-call upper bound. The executor needs actual hard limits and output validation.
 
-## 离线复核
+Construction was expected to require hundreds to over a thousand calls, beyond the eight-call trial. Separate construction and evaluation budgets were proposed and explicitly authorized after their controls could be inspected. These planning estimates are not actual usage. Completed usage appears in the build and evaluation records.
 
-在仓库根目录执行：
+## Offline checks
+
+From the repository root:
 
 ```sh
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/offline_check.py
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/check_study_data.py
 ```
 
-第二个检查核对全部 10 个样本及合成边界案例的发言、说话人、日期和图片描述，检查单边页可进入记忆更新、题单导出确定性及拒绝覆盖旧准备目录。模型相关调用用 mock，不产生费用。
+The second check covers utterances, speakers, dates and image descriptions in all 10 samples and synthetic boundary cases; passage of one-sided pages into memory updating; deterministic question export; and refusal to overwrite existing preparation directories. Model calls are mocked and incur no API cost.
