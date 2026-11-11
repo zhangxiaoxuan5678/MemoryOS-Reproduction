@@ -1,14 +1,105 @@
-# MemoryOS
+<!-- Legacy filename retained for existing links; documentation is now in English. -->
+
+# MemoryOS Reproduction
+
+## Individual reproduction study on LoCoMo conv-26
+
+This repository contains my completed MemoryOS reproduction and a comparison of mid-term retrieval capacities. Memory was built from the complete `conv-26` conversation: **19 sessions, 419 utterances and 215 memory pages**. Evaluation used 25 fixed questions, three capacity settings and three independent answer-generation runs per setting, producing **225 answers**.
+
+The model was DeepSeek's official `deepseek-flash`, with thinking disabled. All runs loaded separate copies of the same frozen memory snapshot. Only `queue_capacity` changed between groups. The original retrieval algorithm, duplicate pages and simplified F1 scorer were retained.
+
+### Results
+
+| queue_capacity | Mean simplified F1 | Sample SD across three run means | Mean retrieved pages | Mean unique pages |
+|---|---:|---:|---:|---:|
+| 5 | 0.41735 | 0.02452 | 5.00 | 4.40 |
+| 10 (original entry-point baseline) | 0.45233 | 0.00566 | 8.96 | 8.04 |
+| 20 | 0.47478 | 0.01142 | 13.00 | 11.40 |
+
+Capacity 20 had the highest overall mean on this question set, but capacity 5 performed best on open-domain questions. No significance test was conducted. **F1 is a word-set overlap score, not answer accuracy or the official LoCoMo metric.** The model substitution, single conversation, selected questions and shared code corrections prevent direct comparison with the paper's full benchmark.
+
+The fixed questions were selected before evaluation: the first six in each of categories 1–3 and the first seven in category 4, then sorted by their original QA indices. Reference answers and evidence were kept out of generation inputs. Evaluation questions and generated answers were not written back to memory.
+
+Evaluation used 450 requests, including 225 keyword-extraction calls and 225 answer-generation calls. There were no evaluation failures, truncated responses or automatic retries. The conservative estimate was CNY 4.549964 using the recorded peak, uncached rates; this is **not the verified account charge**.
+
+See [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md), [REPRODUCTION.md](REPRODUCTION.md) and [DIFFERENCES.md](DIFFERENCES.md) for the detailed records. The evaluation results, differences, running instructions and evidence guide are available in English. The study plan, historical reproduction record, build/evaluation guides and publication instructions are also available in English. Raw experimental evidence is preserved in its original form.
+
+### Verify the existing results without an API key
+
+Run from the repository root. Python 3.11 and its standard library are sufficient. No `.env`, embedding downloads or third-party packages are needed for this check.
+
+```sh
+python3 -B eval/verify_submission.py
+
+# Optional: save the recomputed scores to a new file. Existing files are not overwritten.
+python3 -B eval/verify_submission.py --output runs/offline-recomputed-scores.json
+```
+
+The verifier disables networking, checks evidence hashes and the fixed question selection, validates the snapshot, reads the 225 saved valid answers and recomputes the original F1 statistics. It compares them with the archived scores. **It does not generate new answers or make paid API calls.**
+
+[Evidence](evidence/README.md) includes the fixed questions, separate scoring references, frozen snapshot, original request logs, per-question answers and hash manifests. Key files are `evidence/scores.json`, `evidence/verification.json`, `evidence/evaluation-raw.zip` and `evidence/snapshot.zip`.
+
+### Installation and local checks
+
+The experiment ran on **macOS Apple Silicon arm64 with Python 3.11.9**. `requirements-macos.txt` records the installed direct dependencies. A clean installation from an empty environment has not been verified. The upstream subprojects retain their original requirements.
+
+```sh
+python3.11 -m venv ../.venv
+../.venv/bin/python -m pip install -r requirements-macos.txt
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/offline_check.py
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/check_study_data.py
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/check_build_runtime.py
+```
+
+Installing dependencies requires internet access. The listed checks use mock components and do not call paid models.
+
+To restore the archived files into the original working layout on a fresh copy:
+
+```sh
+python3 -B eval/restore_evidence.py
+python3 -B eval/restore_evidence.py --restore
+python3 -B eval/score_evaluation.py --run-dir runs/eval-results-conv26-v1
+```
+
+The first command previews restoration. The second restores the verified evidence under the ignored `runs/` directory and refuses to overwrite existing destinations. The scoring command recomputes scores from saved answers without making model requests. None of these commands reruns the experiment.
+
+### Configuration for any future generation runs
+
+Review [RUNNING.md](RUNNING.md) before using the generation entry points. The completed results can be inspected without running them again. The historical build and evaluation guides record the original execution and budgets; they do not authorize further spending.
+
+If a new generation run is separately planned, create `.env` from `.env.example` at the repository root only if it does not already exist. Set `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_MODEL` locally. The recorded experiment used DeepSeek's official `deepseek-flash` consistently across stages. Keep credentials out of Git, terminal commands and logs. Do not run the upstream `main_loco_parse.py` full-dataset entry point to inspect the saved results.
+
+Future generation also needs the pinned local embedding resources and the official offline tokenizer described in `RUNNING.md`. Default build and evaluation entry points provide previews; real requests require their explicit paid-execution flag. Models and prices can change, so historical rates are not a guarantee for a future run.
+
+### Shared corrections and remaining limits
+
+The reproduction unified client configuration, cached the original embedding model and corrected dialogue pairing to preserve all utterances. Construction stopped after three truncated outputs. The metadata limit changed from 100 to 300 tokens, and the profile-merge limit from 2,000 to 4,000 and then 16,000. The corresponding merge prompts and algorithm were unchanged. All capacity groups used the same final snapshot. Higher limits allowed completion but did not solve redundant or growing profiles.
+
+### Source, versions and publication history
+
+The original project is [BAI-LAB/MemoryOS](https://github.com/BAI-LAB/MemoryOS), based here on commit `587ed7755c7aed179965792830ff1b5ad9a6fa92`. The Apache-2.0 [LICENSE](LICENSE) is retained. The actual evaluation runtime was `fc48ea6fee9f013fe2476666611edfdb78786023`; the initial safe publication was `43241d859e66e78c66c8e21bc8279aa5f5044661`.
+
+The public copy starts with a clean publication history because suspected hard-coded credentials were found in upstream examples and old history. The original local research history is retained. Historical runtime commits identify provenance but may not be checkable in this public copy. Later documentation commits do not reconstruct the original development history. Do not push the old research history or use `git push --mirror`. See [GITHUB_SUBMISSION.md](GITHUB_SUBMISSION.md) for the original publication procedure.
+
+---
+
+## Original upstream project documentation
+
+The material below is retained from the original MemoryOS README for attribution and reference. Its benchmark claims, demonstrations and installation instructions describe the upstream project, not additional experiments completed in this reproduction. Use the reproduction-specific commands above to verify this submission.
+
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/eb3b167b-1ace-476e-89dc-1a7891356e0b" alt="logo" width="400"/>
 </div>
 <p align="center">
+    <a href="readme_cn.md" target="_blank">
+    <img src="https://img.shields.io/badge/Readme-English-blue" alt="Readme:English">
+  </a>
   <a href="https://arxiv.org/abs/2506.06326">
     <img src="https://img.shields.io/badge/Arxiv-paper-red" alt="Mem0 Discord">
   </a>
   <a href="#contact-us">
-    <img src="https://img.shields.io/badge/Wechat-群二维码-green" alt="Mem0 PyPI - Downloads">
+    <img src="https://img.shields.io/badge/Wechat-Group_QR-green" alt="Mem0 PyPI - Downloads">
   </a>
   <a href="https://www.youtube.com/watch?v=WHQu8fpEOaU" target="blank">
     <img src="https://img.shields.io/badge/Youtube-Video-red" alt="Npm package">
@@ -21,198 +112,243 @@
   </a>
 </p>
 
-<h5 align="center"> 🎉 如果您喜欢我们的项目，请在 GitHub 上给我们一个星 ⭐ 以获取最新更新。</h5>
+<h5 align="center"> 🎉 If you like our project, please give us a star ⭐ on GitHub for the latest update.</h5>
 
-**MemoryOS** 旨在为个性化 AI 智能体提供记忆操作系统，以实现更连贯、个性化和情境感知的交互。它从操作系统的内存管理原理中汲取灵感，采用分层存储架构，包含四个核心模块：存储、更新、检索和生成，以实现全面高效的记忆管理。在 LoCoMo 基准测试中，该模型在 F1 和 BLEU-1 分数上平均提升了 **49.11%** 和 **46.18%**。
+**MemoryOS** is designed to provide a memory operating system for personalized AI agents, enabling more coherent, personalized, and context-aware interactions. Drawing inspiration from memory management principles in operating systems, it adopts a hierarchical storage architecture with four core modules: Storage, Updating, Retrieval, and Generation, to achieve comprehensive and efficient memory management. On the LoCoMo benchmark, the model achieved average improvements of **49.11%** and **46.18%** in F1 and BLEU-1 scores.
 
-  - **论文**: <a href="[https://arxiv.org/abs/2506.06326](https://arxiv.org/abs/2506.06326)" target="_blank">[https://arxiv.org/abs/2506.06326](https://arxiv.org/abs/2506.06326)</a>
-  - **网站**: <a href="[https://baijia.online/memoryos/](https://baijia.online/memoryos/)" target="_blank">[https://baijia.online/memoryos/](https://baijia.online/memoryos/)</a>
-  - **文档**: <a href="[https://bai-lab.github.io/MemoryOS/docs](https://bai-lab.github.io/MemoryOS/docs)" target="_blank">[https://bai-lab.github.io/MemoryOS/docs](https://bai-lab.github.io/MemoryOS/docs)</a>
-  - **YouTube 视频**: **MemoryOS MCP + RAG Agent That Can Remember Anything**
-  - <a href="[https://www.youtube.com/watch?v=WHQu8fpEOaU](https://www.youtube.com/watch?v=WHQu8fpEOaU) ">[https://www.youtube.com/watch?v=WHQu8fpEOaU](https://www.youtube.com/watch?v=WHQu8fpEOaU) </a>
+- **Paper**: <a href="https://arxiv.org/abs/2506.06326" target="_blank">https://arxiv.org/abs/2506.06326</a>
+- **Website**: <a href="https://baijia.online/memoryos/" target="_blank">https://baijia.online/memoryos/</a>
+- **Documentation**: <a href="https://bai-lab.github.io/MemoryOS/docs" target="_blank">https://bai-lab.github.io/MemoryOS/docs</a>
+- **YouTube Video**: **MemoryOS MCP + RAG Agent That Can Remember Anything**
+- <a href="https://www.youtube.com/watch?v=WHQu8fpEOaU ">https://www.youtube.com/watch?v=WHQu8fpEOaU </a>
+
 
 <span id='features'/>
 
-## ✨ 主要特性
+## ✨Key Features
 
-  * 🏆 **顶级的记忆管理性能**
-    </br> 在长期记忆基准测试中取得 SOTA 成果，在 LoCoMo 基准上 F1 分数提升 49.11%，BLEU-1 分数提升 46.18%。
+* 🏆 **TOP Performance** in Memory Management
+</br> The SOTA results in long-term memory benchmarks, boosting F1 scores by 49.11% and BLEU-1 by 46.18% on the LoCoMo benchmark.
 
-  * 🧠 **即插即用的记忆管理架构**
-    </br> 支持无缝集成的可插拔记忆模块——包括存储引擎、更新策略和检索算法。
+* 🧠 **Plug-and-Play** Memory Management Architecture
+</br>  Enables seamless integration of pluggable memory modules—including storage engines, update strategies, and retrieval algorithms.
 
-  * ✨ **轻松创建智能体工作流** (**MemoryOS-MCP**)
-    </br> 通过调用 MCP 服务器提供的模块化工具，为各种 AI 应用注入长期记忆能力。
+* ✨ **Agent Workflow Create with Ease** (**MemoryOS-MCP**)
+</br> Inject long-term memory capabilities into various AI applications by calling modular tools provided by the MCP Server.
 
-  * 🌐 **通用大语言模型支持**
-    </br> MemoryOS 无缝集成各种大语言模型 (例如 OpenAI, Deepseek, Qwen ...)。
+* 🌐 **Universal LLM Support**
+</br> MemoryOS seamlessly integrates with a wide range of LLMs (e.g., OpenAI, Deepseek, Qwen ...)
+
+
+
 
 <span id='news'/>
 
-## 📣 最新消息
+## 🧠 Memory Family 
 
-  * *<mark>[new]</mark>* 🔥🔥🔥 **[2025-07-15]**: **🔌 支持** 向量数据库 [Chromadb](https://www.google.com/search?q=%23memoryos_chromadb-getting-started)
-  * *<mark>[new]</mark>* 🔥🔥🔥 **[2025-07-15]**: **🔌 集成** [Docker](https://www.google.com/search?q=%23docker-getting-started) 到部署流程
-  * *<mark>[new]</mark>* 🔥🔥 **[2025-07-14]**: **⚡ 加速** MCP 并行化
-  * *<mark>[new]</mark>* 🔥🔥 **[2025-07-14]**: **🔌 支持** BGE-M3 & Qwen3 嵌入模型 (PyPI 和 MCP)
-  * *<mark>[new]</mark>* 🔥 **[2025-07-09]**: **📊 评估** MemoryOS 在 LoCoMo 数据集上的表现: 公开可用 [👉复现](https://www.google.com/search?q=%23reproduce)
-  * *<mark>[new]</mark>* 🔥 **[2025-07-08]**: **🏆 新增配置参数**
-  * 新增参数配置: **similarity_threshold**。配置文件请参见 📖 [文档](https://bai-lab.github.io/MemoryOS/docs) 页面。
-  * *<mark>[new]</mark>* **[2025-07-07]**: **🚀 5倍速度提升**
-  * MemoryOS (PYPI) 实现已升级：通过并行化优化，**速度提升5倍** (延迟降低)。
-  * *<mark>[new]</mark>* **[2025-07-07]**: **✨ 现已支持 R1 模型**
-  * MemoryOS 支持配置和使用 **Deepseek-r1 和 Qwen3** 等推理模型。
-  * *<mark>[new]</mark>* **[2025-07-07]**: **✨MemoryOS Playground 上线**
-  * **MemoryOS Platform** 的 Playground 已经上线！[👉MemoryOS Platform](https://baijia.online/memoryos/)。如果您需要**邀请码**，请随时 [联系我们](https://www.google.com/search?q=%23community)。
-  * *<mark>[new]</mark>* **[2025-06-15]**:🛠️ 开源 **MemoryOS-MCP** 发布！现在可在智能体客户端上配置，以实现无缝集成和定制。[👉 MemoryOS-MCP](https://www.google.com/search?q=%23memoryos-mcp-getting-started)。
-  * **[2025-05-30]**: 📄 论文-**Memory OS of AI Agent** 已在 arXiv 上发布: [https://arxiv.org/abs/2506.06326](https://arxiv.org/abs/2506.06326)。
-  * **[2025-05-30]**: **MemoryOS** 初始版本发布！具有短期、中期和长期角色记忆，以及自动用户画像和知识更新功能。
+Welcome to our **Memory Family**, a research line dedicated to exploring AI Memory.
+
+> [**Survey on AI Memory: Theories, Taxonomies, Evaluations, and Emerging Trends**](http://github.com/BAI-LAB/Survey-on-AI-Memory/blob/main/Survey%20on%20AI%20Memory.pdf)  
+> **TL;DR:** Provides a unified theoretical framework for AI Memory, introducing a comprehensive taxonomy and systematically analyzing memory mechanisms, applications, and evaluation methods.  
+> 📄 Paper: http://github.com/BAI-LAB/Survey-on-AI-Memory/blob/main/Survey%20on%20AI%20Memory.pdf
+
+> [**LightSearcher: Efficient DeepSearch via Experiential Memory**](https://arxiv.org/abs/2512.06653)  
+> **TL;DR:** Introduces experiential memory into deep search systems, enabling models to learn from successful reasoning trajectories and improve search efficiency.  
+> 📄 Paper: https://arxiv.org/abs/2512.06653
+
+> [**Memory OS of AI Agent**](https://arxiv.org/abs/2506.06326)  
+> **TL;DR:** Proposes a memory operating system for AI agents that manages short-term, mid-term, and long-term personal memory through hierarchical storage, dynamic updating, retrieval, and generation, improving coherence and personalization in long conversations.  
+> 📄 Paper: https://arxiv.org/abs/2506.06326
+
+## 📣 Latest News
+*   *<mark>[new]</mark>* 🔥🔥🔥  **[2026-01-15]**: **✨Released** [Survey on AI Memory: Theories, Taxonomies, Evaluations, and Emerging Trends](https://github.com/BAI-LAB/Survey-on-AI-Memory)!
+*   *<mark>[new]</mark>* 🔥🔥  **[2025-09-11]**: **🚀Open-sourced** the [Playground platform](#playground-getting-started)!
+*   *<mark>[new]</mark>* 🔥🔥  **[2025-08-21]**: **🎉Accepted**  by EMNLP 2025 main conference!
+*   *<mark>[new]</mark>* 🔥 **[2025-07-15]**: **🔌 Support** for Vector Database [Chromadb](#memoryos_chromadb-getting-started)
+*   *<mark>[new]</mark>* 🔥 **[2025-07-15]**: **🔌 Integrate** [Docker](#docker-getting-started) into deployment
+*   *<mark>[new]</mark>*   **[2025-07-14]**: **⚡ Acceleration** of MCP parallelization 
+*   *<mark>[new]</mark>*   **[2025-07-14]**: **🔌 Support** for BGE-M3 & Qwen3 embeddings on PyPI and MCP.
+*   *<mark>[new]</mark>*   **[2025-07-09]**: **📊 Evaluation** of the MemoryOS on LoCoMo Dataset: Publicly Available [👉Reproduce](#reproduce).
+*   *<mark>[new]</mark>*  **[2025-07-08]**: **🏆 New Config Parameter**
+*   New parameter configuration: **similarity_threshold**. For configuration file, see 📖 [Documentation](https://bai-lab.github.io/MemoryOS/docs) page.
+*   *<mark>[new]</mark>*   **[2025-07-07]**: **🚀5 Times Faster**
+*   The MemoryOS (PYPI) implementation has been upgraded: **5 times faster** (reduction in latency) through parallelization optimizations.
+*   *<mark>[new]</mark>*  **[2025-07-07]**: **✨R1 models Support Now**
+*   MemoryOS supports configuring and using inference models such as **Deepseek-r1 and Qwen3..**
+*   *<mark>[new]</mark>*  **[2025-07-07]**: **✨MemoryOS Playground Launched**
+*   The Playground of **MemoryOS Platform** has been launched! [👉MemoryOS Platform](https://baijia.online/memoryos/). If you need an **Invitation Code**, please feel free to reach [Contact US](#community).
+*   *<mark>[new]</mark>*   **[2025-06-15]**:🛠️ Open-sourced **MemoryOS-MCP** released! Now configurable on agent clients for seamless integration and customization. [👉 MemoryOS-MCP](#memoryos-mcp-getting-started).
+*   **[2025-05-30]**: 📄 Paper-**Memory OS of AI Agent** is available on arXiv: https://arxiv.org/abs/2506.06326.
+*   **[2025-05-30]**: Initial version of **MemoryOS** launched! Featuring short-term, mid-term, and long-term persona Memory with automated user profile and knowledge updating.
+
+  
 
 <span id='list'/>
 
-## 🔥 MemoryOS 支持列表
-
+## 🔥 MemoryOS Support List
 <table>
-<thead>
-<tr>
-<th>类型</th>
-<th>名称</th>
-<th>开源</th>
-<th>支持</th>
-<th>配置</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td rowspan="3">智能体客户端</td>
-<td><strong>Claude Desktop</strong></td>
-<td>❌</td>
-<td>✅</td>
-<td>claude_desktop_config.json</td>
-<td>Anthropic 官方客户端</td>
-</tr>
-<tr>
-<td><strong>Cline</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>VS Code settings</td>
-<td>VS Code 扩展</td>
-</tr>
-<tr>
-<td><strong>Cursor</strong></td>
-<td>❌</td>
-<td>✅</td>
-<td>Settings panel</td>
-<td>AI 代码编辑器</td>
-</tr>
-<tr>
-<td rowspan="6">模型提供商</td>
-<td><strong>OpenAI</strong></td>
-<td>❌</td>
-<td>✅</td>
-<td>OPENAI_API_KEY</td>
-<td>GPT-4, GPT-3.5, 等.</td>
-</tr>
-<tr>
-<td><strong>Anthropic</strong></td>
-<td>❌</td>
-<td>✅</td>
-<td>ANTHROPIC_API_KEY</td>
-<td>Claude 系列</td>
-</tr>
-<tr>
-<td><strong>Deepseek-R1</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>DEEPSEEK_API_KEY</td>
-<td>中文大模型</td>
-</tr>
-<tr>
-<td><strong>Qwen/Qwen3</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>QWEN_API_KEY</td>
-<td>阿里巴巴通义千问</td>
-</tr>
-<tr>
-<td><strong>vLLM</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>本地部署</td>
-<td>本地模型推理</td>
-</tr>
-<tr>
-<td><strong>Llama_factory</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>本地部署</td>
-<td>本地微调部署</td>
-</tr>
-</tbody>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Name</th>
+      <th>Open&nbsp;Source</th>
+      <th>Support</th>
+      <th>Configuration</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="3">Agent Client</td>
+      <td><strong>Claude Desktop</strong></td>
+      <td>❌</td>
+      <td>✅</td>
+      <td>claude_desktop_config.json</td>
+      <td>Anthropic official client</td>
+    </tr>
+    <tr>
+      <td><strong>Cline</strong></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>VS Code settings</td>
+      <td>VS Code extension</td>
+    </tr>
+    <tr>
+      <td><strong>Cursor</strong></td>
+      <td>❌</td>
+      <td>✅</td>
+      <td>Settings panel</td>
+      <td>AI code editor</td>
+    </tr>
+    <tr>
+      <td rowspan="6">Model Provider</td>
+      <td><strong>OpenAI</strong></td>
+      <td>❌</td>
+      <td>✅</td>
+      <td>OPENAI_API_KEY</td>
+      <td>GPT-4, GPT-3.5, etc.</td>
+    </tr>
+    <tr>
+      <td><strong>Anthropic</strong></td>
+      <td>❌</td>
+      <td>✅</td>
+      <td>ANTHROPIC_API_KEY</td>
+      <td>Claude series</td>
+    </tr>
+    <tr>
+      <td><strong>Deepseek-R1</strong></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>DEEPSEEK_API_KEY</td>
+      <td>Chinese large model</td>
+    </tr>
+    <tr>
+      <td><strong>Qwen/Qwen3</strong></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>QWEN_API_KEY</td>
+      <td>Alibaba Qwen</td>
+    </tr>
+    <tr>
+      <td><strong>vLLM</strong></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>Local deployment</td>
+      <td>Local model inference</td>
+    </tr>
+    <tr>
+      <td><strong>Llama_factory</strong></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>Local deployment</td>
+      <td>Local fine-tuning deployment</td>
+    </tr>
+  </tbody>
 </table>
-所有模型调用均使用 OpenAI API 接口；您需要提供 API 密钥和基础 URL。
+All model calls use the OpenAI API interface; you need to supply the API key and base URL.
 
-## 📑 目录
 
-  * <a href='#features'>✨ 特性</a>
-  * <a href='#news'>🔥 最新消息</a>
-  * <a href='#list'>🔍 支持列表</a>
-  * <a href='#structure'> 📁 项目结构</a>
-  * <a href='#pypi-mode'>🎯 快速入门</a>
-      * <a href='pypi-mode'>通过 PYPI 安装 MemoryOS</a>
-      * <a href='#MCP-mode'>MemoryOS-MCP</a>
-      * <a href='https://www.google.com/search?q=%23memoryos_chromadb-getting-started'>MemoryOS-chromadb</a>
-      * <a href='https://www.google.com/search?q=%23docker-getting-started'>Docker</a>
-  * <a href='#todo'>☑️ 待办事项</a>
-  * <a href='https://www.google.com/search?q=%23reproduce'>🔬 如何复现论文中的结果</a>
-  * <a href='#doc'>📖 文档</a>
-  * <a href='#cite'>🌟 引用</a>
-  * <a href='https://www.google.com/search?q=%23community'>🤝 加入社区</a>
+
+## 📑 Table of Contents
+
+* <a href='#features'>✨ Features</a>
+* <a href='#news'>🔥 News</a>
+* <a href='#list'>🔍Support Lists </a>
+* <a href='#structure'> 📁Project Structure</a>
+* <a href='#pypi-mode'>🎯 Quick Start</a>
+  * <a href='pypi-mode'>PYPI Install MemoryOS</a>
+  * <a href='#MCP-mode'>MemoryOS-MCP</a>
+  * <a href='#memoryos_chromadb-getting-started'>MemoryOS-chromadb</a>
+  * <a href='#docker-getting-started'>Docker</a>
+  * <a href='#playground-getting-started'>Playground</a>
+* <a href='#todo'>☑️ Todo List</a>
+* <a href='#reproduce'>🔬 How to Reproduce the Results in the Paper </a>
+* <a href='#doc'>📖 Documentation </a>
+* <a href='#cite'>🌟 Cite</a>
+* <a href='#community'>🤝 Join the Community</a>
 
 <span id='vedio'/>
 
+<!--## Demo-->
+<!--[![Watch the video](https://img.youtube.com/vi/y9Igs0FnX_M/maxresdefault.jpg)](https://youtu.be/y9Igs0FnX_M)-->
+
+
 <span id='structure'/>
 
-## 🏗️ 系统架构
-
+## 🏗️	System Architecture
 <img src="https://github.com/user-attachments/assets/09200494-03a9-4b7d-9ffa-ef646d9d51f0" width="80%" alt="image">
 
-## 🏗️ 项目结构
+## 🏗️ Project Structure
 
 ```
 memoryos/
-├── __init__.py         # 初始化 MemoryOS 包
-├── __pycache__/        # Python 缓存目录 (自动生成)
-├── long_term.py        # 管理长期角色记忆 (用户画像, 知识)
-├── memoryos.py         # MemoryOS 主类，协调所有组件
-├── mid_term.py         # 管理中期记忆，整合短期交互
-├── prompts.py          # 包含用于 LLM 交互的提示 (例如，摘要，分析)
-├── retriever.py        # 从所有记忆层检索相关信息
-├── short_term.py       # 管理近期交互的短期记忆
-└── updater.py          # 处理记忆更新，包括在不同层之间传递信息
-└── utils.py            # 库中使用的工具函数
+├── __init__.py            # Initializes the MemoryOS package
+├── __pycache__/           # Python cache directory (auto-generated)
+├── long_term.py           # Manages long-term persona memory (user profile, knowledge)
+├── memoryos.py            # Main class for MemoryOS, orchestrating all components
+├── mid_term.py            # Manages mid-term memory, consolidating short-term interactions
+├── prompts.py             # Contains prompts used for LLM interactions (e.g., summarization, analysis)
+├── retriever.py           # Retrieves relevant information from all memory layers
+├── short_term.py          # Manages short-term memory for recent interactions
+├── updater.py             # Processes memory updates, including promoting information between layers
+└── utils.py               # Utility functions used across the library
 ```
+
+
+<!--
+## 📖 How It Works
+
+1.  **Initialization:** `Memoryos` is initialized with user and assistant IDs, API keys, data storage paths, and various capacity/threshold settings. It sets up dedicated storage for each user and assistant.
+2.  **Adding Memories:** User inputs and agent responses are added as QA pairs. These are initially stored in short-term memory.
+3.  **Short-Term to Mid-Term Processing:** When short-term memory is full, the `Updater` module processes these interactions, consolidating them into meaningful segments and storing them in mid-term memory.
+4.  **Mid-Term Analysis & LPM Updates:** Mid-term memory segments accumulate "heat" based on factors like visit frequency and interaction length. When a segment's heat exceeds a threshold, its content is analyzed:
+    *   User profile insights are extracted and used to update the long-term user profile.
+    *   Specific user facts are added to the user's long-term knowledge.
+    *   Relevant information for the assistant is added to the assistant's long-term knowledge base.
+5.  **Response Generation:** When a user query is received:
+    *   The `Retriever` module fetches relevant context from short-term history, mid-term memory segments, the user's profile & knowledge, and the assistant's knowledge base.
+    *   This comprehensive context is then used, along with the user's query, to generate a coherent and informed response via an LLM.
+-->    
 
 <span id='pypi-mode'/>
 
-## 📖 MemoryOS_PyPi 上手指南
+## 📖MemoryOS_PyPi Getting Started
 
-### 环境要求
 
-  * Python >= 3.10
-  * conda create -n MemoryOS python=3.10
-  * conda activate MemoryOS
 
-### 安装
+### Prerequisites
 
-#### 从 PyPi 下载
+*   Python >= 3.10
+*   conda create -n MemoryOS python=3.10
+*   conda activate MemoryOS
 
+### Installation
+
+#### Download from PyPi
 ```bash
 pip install memoryos-pro -i https://pypi.org/simple
 ```
-
-#### 从 GitHub 下载 (最新版本)
+#### Download from GitHub (latest version)
 
 ```bash
 git clone https://github.com/BAI-LAB/MemoryOS.git
@@ -220,25 +356,28 @@ cd MemoryOS/memoryos-pypi
 pip install -r requirements.txt
 ```
 
-### 基本用法
+
+
+### Basic Usage
 
 ```python
+
 import os
 from memoryos import Memoryos
 
-# --- 基本配置 ---
+# --- Basic Configuration ---
 USER_ID = "demo_user"
 ASSISTANT_ID = "demo_assistant"
-API_KEY = "YOUR_OPENAI_API_KEY"  # 替换为您的密钥
-BASE_URL = ""  # 可选：如果使用自定义 OpenAI 端点
+API_KEY = "YOUR_OPENAI_API_KEY"  # Replace with your key
+BASE_URL = ""  # Optional: if using a custom OpenAI endpoint
 DATA_STORAGE_PATH = "./simple_demo_data"
 LLM_MODEL = "gpt-4o-mini"
 
 def simple_demo():
-    print("MemoryOS 简单演示")
-
-    # 1. 初始化 MemoryOS
-    print("正在初始化 MemoryOS...")
+    print("MemoryOS Simple Demo")
+    
+    # 1. Initialize MemoryOS
+    print("Initializing MemoryOS...")
     try:
         memo = Memoryos(
             user_id=USER_ID,
@@ -247,114 +386,96 @@ def simple_demo():
             data_storage_path=DATA_STORAGE_PATH,
             llm_model=LLM_MODEL,
             assistant_id=ASSISTANT_ID,
-            short_term_capacity=7,
-            mid_term_heat_threshold=5,
+            short_term_capacity=7,  
+            mid_term_heat_threshold=5,  
             retrieval_queue_capacity=7,
             long_term_knowledge_capacity=100,
-            # 支持 Qwen/Qwen3-Embedding-0.6B, BAAI/bge-m3, all-MiniLM-L6-v2
+            #Support Qwen/Qwen3-Embedding-0.6B, BAAI/bge-m3, all-MiniLM-L6-v2
             embedding_model_name="BAAI/bge-m3"
         )
-        print("MemoryOS 初始化成功！n")
+        print("MemoryOS initialized successfully!\n")
     except Exception as e:
-        print(f"错误: {e}")
+        print(f"Error: {e}")
         return
 
-    # 2. 添加一些基本记忆
-    print("正在添加一些记忆...")
-
+    # 2. Add some basic memories
+    print("Adding some memories...")
+    
     memo.add_memory(
-        user_input="你好！我是汤姆，我在旧金山做数据科学家。",
-        agent_response="你好汤姆！很高兴认识你。数据科学是一个非常令人兴奋的领域。你主要处理什么样的数据？"
+        user_input="Hi! I'm Tom, I work as a data scientist in San Francisco.",
+        agent_response="Hello Tom! Nice to meet you. Data science is such an exciting field. What kind of data do you work with?"
     )
-
-    test_query = "你记得我的工作是什么吗？"
-    print(f"用户: {test_query}")
-
+     
+    test_query = "What do you remember about my job?"
+    print(f"User: {test_query}")
+    
     response = memo.get_response(
         query=test_query,
     )
-
-    print(f"助手: {response}")
+    
+    print(f"Assistant: {response}")
 
 if __name__ == "__main__":
     simple_demo()
 ```
-
 <span id='MCP-mode'/>
 
-## 📖 MemoryOS-MCP 上手指南
-
-### 🔧 核心工具
+## 📖 MemoryOS-MCP Getting Started
+### 🔧 Core Tools
 
 #### 1. `add_memory`
-
-将用户与 AI 助手之间的对话内容保存到记忆系统中，以建立持久的对话历史和上下文记录。
+Saves the content of the conversation between the user and the AI assistant into the memory system, for the purpose of building a persistent dialogue history and contextual record.
 
 #### 2. `retrieve_memory`
-
-根据查询从记忆系统中检索相关的历史对话、用户偏好和知识信息，帮助 AI 助手理解用户的需求和背景。
+Retrieves related historical dialogues, user preferences, and knowledge information from the memory system based on a query, helping the AI assistant understand the user’s needs and background.
 
 #### 3. `get_user_profile`
+Obtains a user profile generated from the analysis of historical dialogues, including the user’s personality traits, interest preferences, and relevant knowledge background.
 
-获取从历史对话分析中生成的用户画像，包括用户的个性特征、兴趣偏好和相关知识背景。
 
-### 1. 安装依赖
-
+### 1. Install dependencies
 ```bash
 cd memoryos-mcp
 pip install -r requirements.txt
 ```
+### 2. configuration
 
-### 2. 配置
-
-编辑 `config.json`：
-
+Edit `config.json`：
 ```json
 {
-  "user_id": "用户ID",
-  "openai_api_key": "OpenAI API 密钥",
+  "user_id": "user ID",
+  "openai_api_key": "OpenAI API key",
   "openai_base_url": "https://api.openai.com/v1",
   "data_storage_path": "./memoryos_data",
-  "assistant_id": "助手ID",
-  "llm_model": "gpt-4o-mini",
-  "embedding_model_name": "BAAI/bge-m3"
+  "assistant_id": "assistant_id",
+  "llm_model": "gpt-4o-mini"
+  "embedding_model_name":"BAAI/bge-m3"
 }
 ```
-
-### 3. 启动服务器
-
+### 3. Start the server
 ```bash
 python server_new.py --config config.json
 ```
-
-### 4. 测试
-
+### 4. Test
 ```bash
 python test_comprehensive.py
 ```
-
-### 5. 在 Cline 和其他客户端上配置
-
-复制 `mcp.json` 文件，并确保文件路径正确。
-
+### 5. Configure it on Cline and other clients
+Copy the mcp.json file over, and make sure the file path is correct.
 ```bash
-"command": "/root/miniconda3/envs/memos/bin/python"
-# 这应该更改为您虚拟环境的 Python 解释器
+command": "/root/miniconda3/envs/memos/bin/python"
+#This should be changed to the Python interpreter of your virtual environment
 ```
+## 📖MemoryOS_Chromadb Getting Started
 
-## 📖MemoryOS_Chromadb 上手指南
-
-### 1. 安装依赖
-
+### 1. Install dependencies
 ```bash
 cd memoryos-chromadb
 pip install -r requirements.txt
 ```
-
-### 2. 测试
-
+### 2. Test
 ```bash
-# 编辑信息在 comprehensive_test.py 中
+The edit information is in comprehensive_test.py
     memoryos = Memoryos(
         user_id='travel_user_test',
         openai_api_key='',
@@ -368,67 +489,78 @@ pip install -r requirements.txt
         short_term_capacity=2
     )
 python3 comprehensive_test.py
-# 切换嵌入模型时，请确保使用不同的数据存储路径。
+# Make sure to use a different data storage path when switching embedding models.
 ```
-
-## 📖Docker 上手指南
-
-您可以通过两种方式使用 Docker 运行 MemoryOS：拉取官方镜像或从 Dockerfile 构建您自己的镜像。这两种方法都适用于快速设置、测试和生产部署。
-
-### 选项 1: 拉取官方镜像
-
+## 📖Docker Getting Started
+You can run MemoryOS using Docker in two ways: by pulling the official image or by building your own image from the Dockerfile. Both methods are suitable for quick setup, testing, and production deployment.
+### Option 1: Pull the Official Image
 ```bash
-# 拉取最新的官方镜像
+# Pull the latest official image
 docker pull ghcr.io/bai-lab/memoryos:latest
 
 docker run -it --gpus=all ghcr.io/bai-lab/memoryos /bin/bash
 ```
-
-### 选项 2: 从 Dockerfile 构建
-
+### Option 2: Build from Dockerfile
 ```bash
-# 克隆仓库
+# Clone the repository
 git clone https://github.com/BAI-LAB/MemoryOS.git
-
+          
 cd MemoryOS
 
-# 构建 Docker 镜像 (确保 Dockerfile 存在)
+# Build the Docker image (make sure Dockerfile is present)
 docker build -t memoryos .
 
 docker run -it --gpus=all memoryos /bin/bash
 ```
 
-## 🎯 复现
+## 📖Playground Getting Started
 
 ```bash
+cd MemoryOS/memoryos-playground/memdemo/
+
+python3 app.py
+```
+After launching the main interface, fill in the corresponding User ID, OpenAI API Key, Model, and API Base URL.
+<img width="645" height="645" alt="image" src="https://github.com/user-attachments/assets/b88f965a-cae5-4ba5-8d29-b82f90e2dac9" />
+
+After entering the system, you can use the Help button to view the functions of each button. 
+
+The user's memory is stored under MemoryOS-main/memoryos-playground/memdemo/data
+
+<img width="645" height="645" alt="image" src="https://github.com/user-attachments/assets/770857d7-5ea2-46b3-8f5c-8150c32d942a" />
+
+## 🎯Reproduce
+```bash
 cd eval
-# 在代码中配置 API 密钥和其他设置
+Configure API keys and other settings in the code
 python3 main_loco_parse.py
 python3 evalution_loco.py
 ```
 
+
 <span id='todo'/>
 
-## ☑️ 待办事项
+## ☑️ Todo List
 
-MemoryOS 正在不断发展！以下是即将推出的功能：
+MemoryOS is continuously evolving! Here's what's coming:
 
-  - **进行中🚀**: **集成基准测试**: 标准化的基准测试套件，用于 Mem0、Zep 和 OpenAI 的跨模型比较
-  - 🏗️ 实现跨不同系统的无缝记忆交换和集成。
+- **Ongoing🚀**: **Integrated Benchmarks**: Standardized benchmark suite with a cross-model comparison for Mem0, Zep, and OpenAI
+- 🏗️ Enabling seamless Memory exchange and integration across diverse systems.
 
-有想法或建议吗？欢迎贡献！请随时提交 issues 或 pull requests！🚀
+  
+
+Have ideas or suggestions? Contributions are welcome! Please feel free to submit issues or pull requests! 🚀
 
 <span id='doc'/>
 
-## 📖 文档
+## 📖 Documentation
 
-更详细的文档即将推出 🚀，我们将在 [文档](https://bai-lab.github.io/MemoryOS/docs) 页面更新。
+A more detailed documentation is coming soon 🚀, and we will update in the [Documentation](https://bai-lab.github.io/MemoryOS/docs) page.
 
 <span id='cite'/>
 
-## 📣 引用
-
-**如果您觉得这个项目有用，请考虑引用我们的论文：**
+## 📣 Citation
+**If you find this project useful, please consider citing our paper:**
 
 ```bibtex
 @misc{kang2025memoryosaiagent,
@@ -444,26 +576,29 @@ MemoryOS 正在不断发展！以下是即将推出的功能：
 
 <span id='related'/>
 
+<!--## 🔍 Related Projects -->
+<!--on going-->
+
 <span id='community'/>
 
-## 🎯 联系我们
+## 🎯 Contact us
+BaiJia AI is a research team guided by Associate Professor Bai Ting from Beijing University of Posts and Telecommunications, dedicated to creating emotionally rich and super-memory brains for AI agents. 
 
-百家 AI 是由北京邮电大学白婷副教授指导的研究团队，致力于为 AI 智能体打造情感丰富、记忆超群的大脑。
+🤝 Cooperation and Suggestions: baiting@bupt.edu.cn 
 
-🤝 合作与建议: baiting@bupt.edu.cn
-
-📣 关注我们的**微信公众号**，加入**微信群**或 <img src="[https://img.shields.io/badge/Discord-yellow](https://img.shields.io/badge/Discord-yellow)" alt="Discord"> [https://discord.gg/SqVj7QvZ](https://discord.gg/SqVj7QvZ) 获取最新动态。
+📣Follow our **WeChat official account**, join the **WeChat group** or  <img src="https://img.shields.io/badge/Discord-yellow" alt="Discord"> https://discord.gg/SqVj7QvZ to get the latest updates.
 
 <div style="display: flex; justify-content: center; gap: 20px;">
-  <img src="https://github.com/user-attachments/assets/42651f49-f1f7-444d-9455-718e13ed75e9" alt="百家Agent公众号" width="250"/> 
-  <img src="https://github.com/user-attachments/assets/b1b53846-cfc3-4814-bfa5-8e88b3621b9e" alt="微信群二维码" width="250"/>
+  <img src="https://github.com/user-attachments/assets/42651f49-f1f7-444d-9455-718e13ed75e9" alt="BaiJia Agent official account" width="250"/> 
+  <img src="https://github.com/user-attachments/assets/a28d33b8-c999-4f96-969e-37d2ef4d6781" alt="WeChat group QR code" width="250"/>
 
 </div>
 
-## 🌟 Star 历史
+## 🌟 Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=BAI-LAB/MemoryOS&type=Timeline)](https://www.star-history.com/#BAI-LAB/MemoryOS&Timeline)
 
-## 免责声明
+## Disclaimer
+This project, MemoryOS (Memory Operation System), is developed by the BaiJia AI team and has no affiliation with memoryOS (https://memoryos.com). The use of the name "MemoryOS" herein is solely for academic discussion purposes.
 
-本项目 MemoryOS (Memory Operation System) 由百家 AI 团队开发，与 memoryOS ([https://memoryos.com](https://memoryos.com)) 无任何关联。此处使用“MemoryOS”名称仅为学术讨论目的。
+
