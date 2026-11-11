@@ -20,7 +20,7 @@ The fixed questions were selected before evaluation: the first six in each of ca
 
 Evaluation used 450 requests, including 225 keyword-extraction calls and 225 answer-generation calls. There were no evaluation failures, truncated responses or automatic retries. The conservative estimate was CNY 4.549964 using the recorded peak, uncached rates; this is **not the verified account charge**.
 
-See [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md), [REPRODUCTION.md](REPRODUCTION.md) and [DIFFERENCES.md](DIFFERENCES.md) for the detailed records. These supporting narratives are currently in Chinese; the commands, JSON evidence and this reproduction overview are available for review without translating them.
+See [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md), [REPRODUCTION.md](REPRODUCTION.md) and [DIFFERENCES.md](DIFFERENCES.md) for the detailed records. The evaluation results, differences, running instructions and evidence guide are available in English. Historical progress records in REPRODUCTION.md and the original build guides retain their Chinese text.
 
 ### Verify the existing results without an API key
 
