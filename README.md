@@ -1,32 +1,45 @@
-# MemoryOS
+# MemoryOS Reproduction
 
-## 本地个人复现作业（conv-26）
+## Individual reproduction study on LoCoMo conv-26
 
-已完成完整215页/419条发言建库，并在同一只读快照的独立副本上完成固定25题、容量5/10/20各3次的225回答评测。使用DeepSeek和仓库简化F1，不能等同论文完整基准成绩。
+This repository contains my completed MemoryOS reproduction and a comparison of mid-term retrieval capacities. Memory was built from the complete `conv-26` conversation: **19 sessions, 419 utterances and 215 memory pages**. Evaluation used 25 fixed questions, three capacity settings and three independent answer-generation runs per setting, producing **225 answers**.
 
-| 容量 | 简化F1均值 ± 三次运行样本标准差 |
-|---|---|
-| 5 | 0.41735 ± 0.02452 |
-| 10（原基准） | 0.45233 ± 0.00566 |
-| 20 | 0.47478 ± 0.01142 |
+The model was DeepSeek's official `deepseek-flash`, with thinking disabled. All runs loaded separate copies of the same frozen memory snapshot. Only `queue_capacity` changed between groups. The original retrieval algorithm, duplicate pages and simplified F1 scorer were retained.
 
-本次评测450次请求、0失败/截断/自动重试，最高价全缓存未命中估算¥4.549964。详见[EVALUATION_RESULTS.md](EVALUATION_RESULTS.md)、[复现记录](REPRODUCTION.md)和[原实现差异](DIFFERENCES.md)。下方上游说明保留。请勿再次执行付费入口来“查看结果”；真实结果已保存在本地运行目录。
+### Results
 
-### 作业提交入口：无密钥、无网络复核
+| queue_capacity | Mean simplified F1 | Sample SD across three run means | Mean retrieved pages | Mean unique pages |
+|---|---:|---:|---:|---:|
+| 5 | 0.41735 | 0.02452 | 5.00 | 4.40 |
+| 10 (original entry-point baseline) | 0.45233 | 0.00566 | 8.96 | 8.04 |
+| 20 | 0.47478 | 0.01142 | 13.00 | 11.40 |
 
-[固定题单及必要证据](evidence/README.md)已纳入提交，包含原始日志归档、统一快照、评分参考、逐题答案和哈希清单。只查看和复算结果不需要 `.env`、嵌入权重或 API：
+Capacity 20 had the highest overall mean on this question set, but capacity 5 performed best on open-domain questions. No significance test was conducted. **F1 is a word-set overlap score, not answer accuracy or the official LoCoMo metric.** The model substitution, single conversation, selected questions and shared code corrections prevent direct comparison with the paper's full benchmark.
+
+The fixed questions were selected before evaluation: the first six in each of categories 1–3 and the first seven in category 4, then sorted by their original QA indices. Reference answers and evidence were kept out of generation inputs. Evaluation questions and generated answers were not written back to memory.
+
+Evaluation used 450 requests, including 225 keyword-extraction calls and 225 answer-generation calls. There were no evaluation failures, truncated responses or automatic retries. The conservative estimate was CNY 4.549964 using the recorded peak, uncached rates; this is **not the verified account charge**.
+
+See [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md), [REPRODUCTION.md](REPRODUCTION.md) and [DIFFERENCES.md](DIFFERENCES.md) for the detailed records. These supporting narratives are currently in Chinese; the commands, JSON evidence and this reproduction overview are available for review without translating them.
+
+### Verify the existing results without an API key
+
+Run from the repository root. Python 3.11 and its standard library are sufficient. No `.env`, embedding downloads or third-party packages are needed for this check.
 
 ```sh
 python3 -B eval/verify_submission.py
-# 可选：另存一份复算结果；目标存在时拒绝覆盖
+
+# Optional: save the recomputed scores to a new file. Existing files are not overwritten.
 python3 -B eval/verify_submission.py --output runs/offline-recomputed-scores.json
 ```
 
-该命令只用 Python 标准库，禁用网络，核验固定选题、证据哈希和快照，读取 225 个真实有效答案，调用原 F1 聚合函数与已归档统计逐项比较。没有生成新答案。
+The verifier disables networking, checks evidence hashes and the fixed question selection, validates the snapshot, reads the 225 saved valid answers and recomputes the original F1 statistics. It compares them with the archived scores. **It does not generate new answers or make paid API calls.**
 
-### 环境与运行命令
+[Evidence](evidence/README.md) includes the fixed questions, separate scoring references, frozen snapshot, original request logs, per-question answers and hash manifests. Key files are `evidence/scores.json`, `evidence/verification.json`, `evidence/evaluation-raw.zip` and `evidence/snapshot.zip`.
 
-实际实验环境为 macOS arm64 / Python 3.11.9。以下依赖文件记录本机实际版本，**没有验证从空环境重新安装**；上游各子项目的 requirements 保持原样。
+### Installation and local checks
+
+The experiment ran on **macOS Apple Silicon arm64 with Python 3.11.9**. `requirements-macos.txt` records the installed direct dependencies. A clean installation from an empty environment has not been verified. The upstream subprojects retain their original requirements.
 
 ```sh
 python3.11 -m venv ../.venv
@@ -36,19 +49,42 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/check
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/check_build_runtime.py
 ```
 
-安装依赖需要网络；上述检查采用 mock，不调用付费模型。运行历史生成流程前，在仓库根目录从 `.env.example` **新建** `.env`（已有文件不要覆盖），本地填写 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`。示例仅留空占位，无第三方默认地址。实际模型为 DeepSeek 官方 `deepseek-flash`；各阶段使用同一环境配置。仅复算已有结果时不要配置密钥。
+Installing dependencies requires internet access. The listed checks use mock components and do not call paid models.
 
-当前可执行的恢复、运行与原始评分命令见 [RUNNING.md](RUNNING.md)。[BUILD_GUIDE.md](BUILD_GUIDE.md)、[EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) 保留历史授权过程，不是再次执行的许可。不要运行 `main_loco_parse.py` 完整入口。当前上传准备不重新调用 API。
+To restore the archived files into the original working layout on a fresh copy:
 
-### 版本、安全发布与上传
+```sh
+python3 -B eval/restore_evidence.py
+python3 -B eval/restore_evidence.py --restore
+python3 -B eval/score_evaluation.py --run-dir runs/eval-results-conv26-v1
+```
 
-上游来源为 [BAI-LAB/MemoryOS](https://github.com/BAI-LAB/MemoryOS)，基线 `587ed7755c7aed179965792830ff1b5ad9a6fa92`，保留 Apache-2.0 LICENSE。真实评测运行版本 `fc48ea6fee9f013fe2476666611edfdb78786023`。运行配置修正与画像冗余限制见 [DIFFERENCES.md](DIFFERENCES.md)。
+The first command previews restoration. The second restores the verified evidence under the ignored `runs/` directory and refuses to overwrite existing destinations. The scoring command recomputes scores from saved answers without making model requests. None of these commands reruns the experiment.
 
-最终检查在上游非 eval 示例及其历史中发现疑似硬编码凭据，现已改从环境读取。为避免传播旧凭据，GitHub 发布副本采用全新提交历史；原本地历史保留，运行版本号作为 provenance 记录。**不要从原本地仓库推送旧历史，也不要使用 `git push --mirror`。** 上传自己的仓库请按 [GITHUB_SUBMISSION.md](GITHUB_SUBMISSION.md) 操作。
+### Configuration for any future generation runs
+
+Review [RUNNING.md](RUNNING.md) before using the generation entry points. The completed results can be inspected without running them again. The historical build and evaluation guides record the original execution and budgets; they do not authorize further spending.
+
+If a new generation run is separately planned, create `.env` from `.env.example` at the repository root only if it does not already exist. Set `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_MODEL` locally. The recorded experiment used DeepSeek's official `deepseek-flash` consistently across stages. Keep credentials out of Git, terminal commands and logs. Do not run the upstream `main_loco_parse.py` full-dataset entry point to inspect the saved results.
+
+Future generation also needs the pinned local embedding resources and the official offline tokenizer described in `RUNNING.md`. Default build and evaluation entry points provide previews; real requests require their explicit paid-execution flag. Models and prices can change, so historical rates are not a guarantee for a future run.
+
+### Shared corrections and remaining limits
+
+The reproduction unified client configuration, cached the original embedding model and corrected dialogue pairing to preserve all utterances. Construction stopped after three truncated outputs. The metadata limit changed from 100 to 300 tokens, and the profile-merge limit from 2,000 to 4,000 and then 16,000. The corresponding merge prompts and algorithm were unchanged. All capacity groups used the same final snapshot. Higher limits allowed completion but did not solve redundant or growing profiles.
+
+### Source, versions and publication history
+
+The original project is [BAI-LAB/MemoryOS](https://github.com/BAI-LAB/MemoryOS), based here on commit `587ed7755c7aed179965792830ff1b5ad9a6fa92`. The Apache-2.0 [LICENSE](LICENSE) is retained. The actual evaluation runtime was `fc48ea6fee9f013fe2476666611edfdb78786023`; the initial safe publication was `43241d859e66e78c66c8e21bc8279aa5f5044661`.
+
+The public copy starts with a clean publication history because suspected hard-coded credentials were found in upstream examples and old history. The original local research history is retained. Historical runtime commits identify provenance but may not be checkable in this public copy. Later documentation commits do not reconstruct the original development history. Do not push the old research history or use `git push --mirror`. See [GITHUB_SUBMISSION.md](GITHUB_SUBMISSION.md) for the original publication procedure.
 
 ---
 
-## 以下为保留的上游项目说明
+## Original upstream project documentation
+
+The material below is retained from the original MemoryOS README for attribution and reference. Its benchmark claims, demonstrations and installation instructions describe the upstream project, not additional experiments completed in this reproduction. Use the reproduction-specific commands above to verify this submission.
+
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/eb3b167b-1ace-476e-89dc-1a7891356e0b" alt="logo" width="400"/>
