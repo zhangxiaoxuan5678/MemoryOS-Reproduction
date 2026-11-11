@@ -1,19 +1,19 @@
-# 运行、恢复与评分命令
+# Running, restoring and scoring
 
-所有命令在仓库根目录执行。当前任务只整理提交，不运行付费实验。下列流程将“复核现成结果”和“重新生成回答”分开；不要运行上游 main_loco_parse.py 全量入口。
+Run all commands from the repository root. The experiment is complete. The instructions below distinguish checking saved results from generating new answers. Use the saved evidence to review the submission rather than the upstream full-dataset `main_loco_parse.py` entry point.
 
-## 1. 最小离线复核：无需依赖或密钥
+## 1. Minimal offline verification: no dependencies or key
 
-Python 3.11：
+With Python 3.11:
 
 ```sh
 python3 -B eval/verify_submission.py
 python3 -B eval/checks/check_secrets.py --history
 ```
 
-第一条直接读 evidence ZIP 并按仓库原简化 F1 复算。第二条适用于安全发布副本，应通过；原始研究仓库因继承上游旧凭据历史会报待审查，不能据删除当前行就上传原历史。扫描不读取 `.env` 内容，不显示匹配值；启发式扫描不能保证发现所有格式的秘密。
+The first command reads the evidence ZIP files directly and recomputes the repository's original simplified F1. The second scans the safe publication copy and its history. The original research repository inherited suspected credentials in old upstream history, so deleting current lines alone would not make that history suitable for publication. The scan does not read `.env` contents or print matching values. It is heuristic and cannot guarantee detection of every secret format.
 
-## 2. 恢复到原入口所需目录（仅全新副本）
+## 2. Restore the working layout on a fresh copy
 
 ```sh
 python3 -B eval/restore_evidence.py
@@ -22,9 +22,9 @@ python3 -B eval/score_evaluation.py --run-dir runs/eval-results-conv26-v1
 python3 -B eval/prepare_evaluation.py --output runs/eval-prepared-conv26-v1
 ```
 
-恢复脚本先核验公开证据，再将题单/独立参考、只读快照、九份记忆副本和原始结果写入被忽略的 runs。任一目标已存在即拒绝，不覆盖原研究记录。评分只重新计算分数，不生成答案；新 scores.json 写在 runs 副本，不改变 evidence。准备评测脚本创建九份新状态副本，不联网、不下载模型、不发 API。这些命令只需标准库。
+The restore script verifies the public evidence first, then restores the question list, separate references, frozen snapshot, nine memory copies and original results under the ignored `runs/` directory. It refuses to overwrite any existing destination. The scoring command only recomputes scores from saved answers; its new `scores.json` is written under `runs/`, leaving `evidence/` intact. Evaluation preparation creates nine fresh state copies without networking, model downloads or API calls. These commands require only the standard library.
 
-## 3. 本机完整 eval 环境
+## 3. Full local evaluation environment
 
 ```sh
 python3.11 -m venv ../.venv
@@ -36,24 +36,24 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/check
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/check_evaluation.py
 ```
 
-requirements-macos.txt 记录实际 macOS arm64 / Python 3.11.9 环境的直接依赖；未验证空环境安装。安装需要网络。最后一组评测检查需要先按第 2 节恢复与准备；使用假 SDK/假嵌入/假 tokenizer，不需要下载资源，不是新实验。费用预留仍执行真实运算逻辑；正式 tokenizer 的真实计数核查另存于 evidence/input-budget-audit.json。检查输出里的“调用 GPT”是原函数在 mock 路径的日志，不代表真实请求。
+`requirements-macos.txt` records the direct dependencies installed on macOS arm64 / Python 3.11.9. Installation into an empty environment has not been verified. Installing packages requires internet access. The final evaluation check requires restoration and preparation from Section 2 first. The checks use a fake SDK, embeddings and tokenizer; they do not download resources or constitute new experiments. They exercise the actual cost-reservation logic. An audit using the official tokenizer is separately recorded in `evidence/input-budget-audit.json`. The original function may print a Chinese message meaning "calling GPT" along a mock path; that log message does not indicate a real request.
 
-## 4. 原运行入口与额外前提（本次不执行）
+## 4. Generation entry points and additional prerequisites
 
-只恢复已完成快照即可继续研究检索，不需要再次付费建库。重新运行前还需本地模型资源：
+Restoring the completed snapshot is enough to study retrieval; rebuilding memory is unnecessary. A new generation run would additionally require local model resources:
 
 ```sh
-# 会下载嵌入权重，不是 API 实验；当前提交整理不执行此命令
+# Downloads embedding weights; does not run a paid API experiment.
 ../.venv/bin/python -B eval/download_embedding.py
 ```
 
-下载器已固定本次原权重 revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`，生成本机路径元数据 runs/embedding-download.json，不把原机器绝对路径当作可移植资源。
+The downloader pins the original weights used here to revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`. It writes machine-specific path metadata to `runs/embedding-download.json`; an absolute path from the original machine is not a portable resource.
 
-评测金额预留还需要官方离线 tokenizer，原来源与 ZIP SHA-256 记录在 evidence/evaluation-config.json，期望位置为 runs/deepseek-v4-tokenizer/official.zip 及 deepseek_v4_tokenizer/tokenizer.json、tokenizer_config.json。权重和 tokenizer 均不进 Git；下载后应按记录核验，不能悄悄改用其他分词器。
+Evaluation cost reservation also requires the official offline tokenizer. Its original source and ZIP SHA-256 are recorded in `evidence/evaluation-config.json`. Expected locations are `runs/deepseek-v4-tokenizer/official.zip` and `deepseek_v4_tokenizer/tokenizer.json`, `tokenizer_config.json` beneath that tokenizer directory. Neither weights nor tokenizer files are committed to Git. Verify downloaded files against the recorded hashes rather than silently substituting another tokenizer.
 
-然后在本地新建 `.env`，按 `.env.example` 填写三个变量，已有文件不覆盖，不将密钥写入 shell 命令或日志。实际使用官方 deepseek-flash、thinking disabled。服务端模型和价格未来可能变化；重新付费前必须重新核实，历史定价不能视为未来价格承诺。
+For a separately planned generation run, create `.env` locally from `.env.example` only if it does not exist, and fill in the three variables. Keep keys out of shell commands and logs. The recorded experiment used official `deepseek-flash` with thinking disabled. Server-side models and prices may change; historical prices do not guarantee future rates.
 
-默认评测预览（不加载 API 配置、不创建客户端）：
+Default evaluation preview, which neither loads API configuration nor creates a client:
 
 ```sh
 ../.venv/bin/python -B eval/run_evaluation.py \
@@ -62,9 +62,9 @@ requirements-macos.txt 记录实际 macOS arm64 / Python 3.11.9 环境的直接�
   --max-requests 450 --max-cost-cny 20
 ```
 
-只有另行明确批准新付费范围后才添加 `--allow-paid`。当前实验授权已用完，不因命令存在而重新授权。执行器要求工作区干净、全新结果目录，失败不自动重试或用旧答案补齐。
+Add `--allow-paid` only for a separately authorized new paid run. Authorization for the completed experiment does not authorize further spending. The executor requires a clean working tree and a fresh results directory. It does not automatically retry failures or fill missing answers using previous outputs.
 
-若确需研究重新建库，离线准备与默认预览是：
+If a new memory build is needed for further research, offline preparation and the default preview are:
 
 ```sh
 ../.venv/bin/python -B eval/prepare_study.py --output runs/new-build-preparation
@@ -75,4 +75,4 @@ requirements-macos.txt 记录实际 macOS arm64 / Python 3.11.9 环境的直接�
   --max-requests 1200 --max-cost-cny 10
 ```
 
-新建库不是原始付费历史的复跑保证，不能替代所有组应共用的已发布快照。原建库的输出上限修正、停止与获准重发详情见 BUILD_GUIDE.md 和 snapshot.zip 的 provenance。
+A new build is not guaranteed to reproduce the original paid execution exactly. It cannot replace the published snapshot shared by all reported groups. Historical output-limit changes, stops and explicitly authorized resends are documented in `BUILD_GUIDE.md` and the provenance inside `snapshot.zip`.
