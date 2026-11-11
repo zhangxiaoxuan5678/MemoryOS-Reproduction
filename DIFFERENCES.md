@@ -1,49 +1,62 @@
-# 与上游原始提交的差异
+# Differences from the original upstream commit
 
-上游基线：587ed7755c7aed179965792830ff1b5ad9a6fa92。
+Upstream baseline: `587ed7755c7aed179965792830ff1b5ad9a6fa92`.
 
-1. API 配置：移除硬编码第三方端点和导入期全局客户端；根 .env 加载，环境变量优先；所有阶段使用同一配置模型。不保存密钥。
-2. 嵌入：保持 all-MiniLM-L6-v2 与原编码参数；延迟加载、实例缓存。原模型版本及文件哈希有独立记录。
-3. 完整对话：独立纯转换器按 session 配对，不覆盖跨 session/连续同说话人发言；单边页保留。conv-26 的 419 条发言形成 215 页。正常双边页仍用原 User 内容做主题摘要；仅 Assistant 页用该侧内容作为主题输入。
-4. 正式建库执行方式：单样本、冻结输入、不接触问题和标准答案。保持原容量、热度阈值、主题阈值、提示词、温度及原始页内容。新增主题结构校验，异常不静默丢页。
-5. 运行约束：DeepSeek flash 显式关闭思考；无 SDK 自动重试。事务检查点、响应重放、原始页覆盖和哈希验收；快照只读。
-6. 新增授权限制：最多 1200 次新增请求；程序人民币预算10元，按输入2元/百万、输出8元/百万计。每次预留1048576输入和2000输出tokens费用，超剩余额度不发送；完整usage后才释放余额，结果未知则保留预留并停止。
-7. 模型上下文公开为1M，输入预留采用2^20以同时覆盖十进制/二进制解释。该程序预算基于已核实公示单价，不声称替代提供商账单或防止未来价格变更。
-8. 本阶段不改检索去重/排序和评分，不运行任何正式评测。固定25题及参考文件已独立准备，建库不读取它们。
+This document records changes in the order they were introduced. Statements about a phase occurring before evaluation describe the historical workflow. The completed evaluation is reported in [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md).
 
-所有故障注入日志来自临时假SDK，不混入真实建库账本。真实请求、usage、错误与源码哈希保存在每个独立运行目录。
+## Initial construction changes
 
-## 用户授权的运行配置修正：元摘要100→300
+1. **API configuration.** Removed hard-coded third-party endpoints and the import-time global client. Configuration loads from the root `.env`, with environment variables taking priority. All stages use the same configured model. Keys are not stored in the repository.
+2. **Embeddings.** Retained `all-MiniLM-L6-v2` and the original encoding parameters, adding lazy loading and instance caching. The model revision and file hashes are recorded separately.
+3. **Complete dialogue conversion.** A separate pure converter pairs utterances within each session, avoiding overwrites across sessions or consecutive turns by the same speaker. One-sided pages are retained. All 419 utterances in `conv-26` form 215 pages. Normal two-sided pages still use the original User content for topic summaries; an Assistant-only page uses that side's content as the topic input.
+4. **Construction execution.** Limited the build to one sample with frozen inputs, without reading questions or reference answers. Retained original capacities, heat/topic thresholds, prompts, temperatures and page contents. Added topic-structure validation so failures cannot silently discard pages.
+5. **Runtime controls.** Explicitly disabled thinking for DeepSeek flash and disabled SDK automatic retries. Added transactional checkpoints, response replay, raw-page coverage and hash acceptance checks. The published snapshot is read-only.
+6. **Construction budget.** Set a cumulative limit of 1,200 new requests and CNY 10, using recorded rates of CNY 2 per million input tokens and CNY 8 per million output tokens. Initially, each request reserved costs for 1,048,576 input and 2,000 output tokens. Requests exceeding remaining funds were not sent. Reservations were released only after complete usage was known; an unknown outcome retained its reservation and stopped execution.
+7. **Context reservation.** The model context was documented as 1M at the time. The input reservation used `2^20` to cover both decimal and binary interpretations. These program limits rely on the verified published prices; they do not replace provider billing or protect against future price changes.
+8. **Scope at this stage.** Construction did not change retrieval deduplication, sorting or scoring and did not run formal evaluation. The fixed 25 questions and references were prepared separately and were not read during construction.
 
-首次正式建库在第68页元摘要发生100-token截断，前67页检查点未包含截断内容。用户明确授权仅重发请求333一次，并将元摘要上限统一改为300，作为所有实验组共用的运行修正，不作为实验变量。此前成功页及响应不重建，原始日志和config.json不改写；修正后的配置另存config-meta300.json。所有组将共用最终同一快照，快照中保留前67页使用旧上限的真实历史。
+Fault-injection logs came from a temporary fake SDK and were excluded from the real construction ledger. Real requests, usage, errors and source hashes were saved in the corresponding run directories.
 
-单次重发依明确授权文件约束：请求指纹仅允许max_tokens由100变300，其他字段相同；新请求计入原账本及原金额预算。后续任何截断仍停止，无自动重试。
+## Authorized metadata-summary limit change: 100 to 300
 
-## 用户明确授权的画像合并2000→4000运行修正
+The initial build stopped at page 68 because a metadata summary reached the 100-token limit. The checkpoint for the first 67 pages did not contain the truncated content. The user explicitly authorized one resend of request 333 and a shared metadata-summary limit of 300. This was a runtime correction common to every group, not an experimental variable.
 
-离线诊断确认画像存在同义冗余与持续增长，证据完整保留；用户随后明确要求不改变画像合并提示词、算法或去重方式，仅提高长期画像合并调用的输出上限到4000。已离线对比确认messages与temperature完全相同。其他调用上限不变，元摘要仍为300。
+Previously successful pages and responses were reused. Original logs and `config.json` were retained; the revised configuration was saved separately as `config-meta300.json`. The final snapshot preserves the actual history in which the first 67 pages used the earlier limit.
 
-画像合并请求按4000输出tokens预留，输入仍按1048576tokens保守预留，高峰价合计2.129152元；其他请求维持原预留。原10元/1200次累计预算不重置。仅为原请求408追加一次明确授权重发，后续再截断则停止。
+The resend authorization allowed only `max_tokens` to change from 100 to 300 in the request fingerprint. All other fields had to match. The new request counted against the original cumulative request and monetary budgets. Any later truncation still stopped execution without an automatic retry.
 
-这只是所有实验组共用的运行配置调整，不是实验变量，也没有解决画像冗余、信息累积或提示词长度约束冲突。未来所有组必须使用同一完整建库快照，不能分别重建不同画像。
+## Authorized profile-merge limit change: 2,000 to 4,000
 
-## 用户授权的画像合并4000→16000修正
+Offline diagnosis found synonymous redundancy and continued profile growth; the evidence was retained. The user then explicitly requested raising only the long-term profile-merge output limit to 4,000, without changing prompts, the algorithm or deduplication. Offline comparison confirmed identical messages and temperature. Other limits stayed unchanged, including the 300-token metadata limit.
 
-官方Chat Completions文档允许max_tokens为1至393216，当前deepseek-flash支持显式16000输出。未发API探测请求。依据：https://api-docs.deepseek.com/api/create-chat-completion/；模型细节：https://api-docs.deepseek.com/zh-cn/quick_start/pricing/。
+Profile-merge requests reserved 4,000 output tokens plus 1,048,576 input tokens, or CNY 2.129152 at the recorded peak rates. Other request reservations were unchanged. The CNY 10 / 1,200-request cumulative budget was not reset. Request 408 received one explicitly authorized resend; a later truncation again required a stop.
 
-仅gpt_update_profile的max_tokens改为16000，不改提示词、温度、合并算法，不压缩或去重画像。发送前该类请求预留1048576输入与16000输出tokens，高峰价合计2.225152元，继续沿用原累计10元/1200次。原请求697只获得一次明确授权重发。其他输出上限不变，后续截断或预算不足仍停止。
+This shared runtime adjustment did not resolve profile redundancy, information accumulation or conflicting prompt-length requirements. All evaluation groups had to use the same completed snapshot rather than rebuild different profiles.
 
-该调整不是实验变量，也未解决冗余。原始日志、历次配置和诊断均保留。最终快照只有215页/419条发言覆盖验收通过才发布，附带修正与诊断证据；以后所有组加载同一完整快照，禁止各组分别重建画像。
+## Authorized profile-merge limit change: 4,000 to 16,000
 
+At the time of the change, the official Chat Completions documentation specified `max_tokens` from 1 to 393216, supporting an explicit 16,000-token output limit for the configured `deepseek-flash`. No API probe request was sent. Historical sources: [Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/) and [model/pricing documentation](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/). These describe the basis for that execution decision, not a guarantee of future service limits.
 
-## 最终完整快照与限制
+Only `gpt_update_profile` changed to `max_tokens=16000`. Prompts, temperature and the merge algorithm were unchanged; profiles were neither compressed nor deduplicated. The pre-request reservation for this call became 1,048,576 input and 16,000 output tokens, or CNY 2.225152 at the recorded peak rates. The original cumulative CNY 10 / 1,200-request limits remained. Request 697 received one authorized resend. Other output limits were unchanged; truncation or insufficient budget still stopped execution.
 
-完成215页/419条发言，全量覆盖与哈希独立验收通过。累计1052次请求、524744 tokens；高峰缓存未命中价估算2.089654元。画像合并最大实际输出7223 tokens，说明输出容量调整发挥运行作用，但不证明冗余得到解决。历次修正和冗余诊断已随只读快照provenance封装。所有组由STUDY_SNAPSHOT.json固定同一完整快照，不按组重建。没有运行评测。
+The adjustment was not an experimental variable and did not solve redundancy. Original logs, successive configurations and diagnostics were retained. Publication of the final snapshot required acceptance of all 215 pages / 419 utterances, with correction and diagnostic evidence attached. Every group then loaded that same complete snapshot.
 
-## 正式评测准备范围
+## Final snapshot
 
-只将queue_capacity作为人为变量5/10/20，10为上游入口值；每组3次/25题。按用户要求保留原检索算法、重复页与id(page)同分处理，没有增加去重或稳定排序。只新增观测字段和副本隔离。关键词和答案均独立请求，不共享或缓存跨重复结果。简化F1直接调用上游函数，标准差采用三个运行均值的样本标准差。FAISS/OMP固定1线程为共用运行环境，不作为实验变量。没有执行真实评测或生成F1分数。
+Construction completed all 215 pages / 419 utterances and passed independent coverage and hash checks. It used 1,052 requests and 524,744 tokens, with an estimated CNY 2.089654 at peak, uncached rates. The largest actual profile-merge output was 7,223 tokens. Higher limits allowed execution to finish but did not establish that redundancy was resolved.
 
-## 正式评测授权后的资金闸门与调度
+The read-only snapshot's provenance contains all limit changes and redundancy diagnostics. `STUDY_SNAPSHOT.json` pins the same complete snapshot for every group. No evaluation had run at the point this snapshot was published.
 
-保留原检索算法/提示词，只修改执行调度和费用保护：每题交错三容量，三次重复轮换起始容量；9份独立副本，不复用生成答案。改用官方离线tokenizer对完整输入计数加25%/512余量，另以完整请求UTF8字节数+1024作更宽预留底线，加最大输出费用。历史1052请求和75提示词离线核查通过；不裁剪实验提示词。独立评测预算450请求/20元，不自动重试或扩额，异常/截断单独标记，不静默计分。
+## Formal evaluation preparation
+
+The only controlled variable was `queue_capacity=5/10/20`, with 10 taken from the upstream entry point. Each group used three runs of 25 questions. The original retrieval algorithm, duplicate pages and `id(page)` tie handling were retained; no deduplication or stable sorting was added. New fields recorded observations and isolated the run copies.
+
+Keyword extraction and answer generation made separate requests, with no shared or cached outputs across repetitions. Simplified F1 called the upstream function directly. Sample SD was computed from the three run means. FAISS/OMP used one thread as a shared environment setting, not an experimental variable. Preparation itself generated no real evaluation answers or F1 scores.
+
+## Evaluation scheduling and budget controls
+
+After evaluation authorization, the retrieval algorithm and prompts remained unchanged. Execution interleaved capacities question by question and rotated the starting capacity across repetitions. Nine independent copies were used, without reusing generated answers.
+
+Full input was counted using the official offline tokenizer, with a 25% / 512-token margin. The full UTF-8 request byte count plus 1,024 provided an additional reservation floor, and maximum output cost was added. Offline checks covered the historical 1,052 requests and 75 full answer prompts. No experimental prompt was truncated.
+
+The evaluation had a separate 450-request / CNY 20 budget, with no automatic retries or budget increases. Errors and truncated outputs would be marked separately rather than silently scored. The completed results, including the absence of these failures, are in [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md).
