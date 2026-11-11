@@ -20,7 +20,7 @@ The fixed questions were selected before evaluation: the first six in each of ca
 
 Evaluation used 450 requests, including 225 keyword-extraction calls and 225 answer-generation calls. There were no evaluation failures, truncated responses or automatic retries. The conservative estimate was CNY 4.549964 using the recorded peak, uncached rates; this is **not the verified account charge**.
 
-See [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md), [REPRODUCTION.md](REPRODUCTION.md) and [DIFFERENCES.md](DIFFERENCES.md) for the detailed records. The evaluation results, differences, running instructions and evidence guide are available in English. Historical progress records in REPRODUCTION.md and the original build guides retain their Chinese text.
+See [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md), [REPRODUCTION.md](REPRODUCTION.md) and [DIFFERENCES.md](DIFFERENCES.md) for the detailed records. The evaluation results, differences, running instructions and evidence guide are available in English. The study plan, historical reproduction record, build/evaluation guides and publication instructions are also available in English. Raw experimental evidence is preserved in its original form.
 
 ### Verify the existing results without an API key
 
@@ -91,13 +91,13 @@ The material below is retained from the original MemoryOS README for attribution
 </div>
 <p align="center">
     <a href="readme_cn.md" target="_blank">
-    <img src="https://img.shields.io/badge/Readme-中文-blue" alt="Readme:中文">
+    <img src="https://img.shields.io/badge/Readme-English-blue" alt="Readme:English">
   </a>
   <a href="https://arxiv.org/abs/2506.06326">
     <img src="https://img.shields.io/badge/Arxiv-paper-red" alt="Mem0 Discord">
   </a>
   <a href="#contact-us">
-    <img src="https://img.shields.io/badge/Wechat-群二维码-green" alt="Mem0 PyPI - Downloads">
+    <img src="https://img.shields.io/badge/Wechat-Group_QR-green" alt="Mem0 PyPI - Downloads">
   </a>
   <a href="https://www.youtube.com/watch?v=WHQu8fpEOaU" target="blank">
     <img src="https://img.shields.io/badge/Youtube-Video-red" alt="Npm package">
@@ -587,8 +587,8 @@ BaiJia AI is a research team guided by Associate Professor Bai Ting from Beijing
 📣Follow our **WeChat official account**, join the **WeChat group** or  <img src="https://img.shields.io/badge/Discord-yellow" alt="Discord"> https://discord.gg/SqVj7QvZ to get the latest updates.
 
 <div style="display: flex; justify-content: center; gap: 20px;">
-  <img src="https://github.com/user-attachments/assets/42651f49-f1f7-444d-9455-718e13ed75e9" alt="百家Agent公众号" width="250"/> 
-  <img src="https://github.com/user-attachments/assets/a28d33b8-c999-4f96-969e-37d2ef4d6781" alt="微信群二维码" width="250"/>
+  <img src="https://github.com/user-attachments/assets/42651f49-f1f7-444d-9455-718e13ed75e9" alt="BaiJia Agent official account" width="250"/> 
+  <img src="https://github.com/user-attachments/assets/a28d33b8-c999-4f96-969e-37d2ef4d6781" alt="WeChat group QR code" width="250"/>
 
 </div>
 
