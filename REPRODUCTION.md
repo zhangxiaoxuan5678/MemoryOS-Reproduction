@@ -1,133 +1,121 @@
-# MemoryOS 小规模复现记录
+# MemoryOS small-scale reproduction record
 
-本项目已完成conv-26全部215页/419条发言的真实建库和统一只读快照验收。已完成25题、三容量各三次的正式评测，真实简化F1结果见EVALUATION_RESULTS.md；它不等于准确率或论文完整基准。下方保留各阶段方案、停止和恢复的真实记录。
+Construction and acceptance of the complete `conv-26` snapshot are finished: 215 pages / 419 utterances. The formal 25-question evaluation, three capacities and three runs each, is also complete. Real simplified F1 results are in [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md); they are neither accuracy nor the paper's full benchmark scores. The chronological sections below retain earlier plans, stops and recoveries. Earlier statements that an operation had not run refer to that historical stage.
 
-## 代码基线
+## Code baseline
 
-- 上游原始提交：`587ed7755c7aed179965792830ff1b5ad9a6fa92`
-- 工作分支：`repro/memoryos-small-study`
-- 第一阶段配置改动：`2f8d438`
-- 环境：macOS arm64，Python 3.11.9；解释器 `../.venv/bin/python`。
-- 依赖快照：`requirements-macos.txt`，记录当前环境版本，不代表已验证全新安装。
+- Upstream commit: `587ed7755c7aed179965792830ff1b5ad9a6fa92`.
+- Research branch: `repro/memoryos-small-study`.
+- Initial configuration changes: `2f8d438`.
+- Environment: macOS arm64, Python 3.11.9; interpreter `../.venv/bin/python`.
+- `requirements-macos.txt` records the environment's dependencies, without claiming a verified clean installation.
 
-## 当前可执行的离线检查
+## Initial offline checks
 
-在仓库根目录执行：
+From the repository root:
 
 ```sh
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/offline_check.py
 ```
 
-脚本检查语法、导入、缺少配置报错、假配置传递、环境变量优先级及嵌入模型缓存。
-真实 `.env` 不被读取，网络连接被拦截，SDK 和嵌入模型均由 mock 替代。
-输出中的 conv-26 统计来自真实数据和原转换函数，不是建库或评测结果。
+The script checks syntax, imports, missing-configuration errors, fake configuration propagation, environment precedence and embedding-model caching. It does not read real `.env`; network connections are blocked and SDK/embedding objects are mocked. Its `conv-26` statistics come from real source data and the original converter, not from construction or evaluation.
 
-## 在本机填写配置
+## Local configuration
 
-先确定提供商提供的完整 API base URL 和模型标识。使用本地编辑器打开仓库根目录 `.env`；如果文件不存在，再依据 `.env.example` 创建，切勿覆盖已有配置。
+Determine the provider's full API base URL and model identifier. Open the root `.env` in a local editor; create it from `.env.example` only if absent. Do not overwrite existing configuration.
 
-需要填写三个变量：`OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`。
-不要将密钥粘贴到聊天、截图、报告或 Git。`.env` 已被忽略，现有 shell 环境变量优先于文件配置。所有实验阶段使用同一配置模型。
+The variables are `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_MODEL`. Keep keys out of chat, screenshots, reports and Git. `.env` is ignored, and existing shell environment variables override file values. Every experiment stage uses the same configured model.
 
-## 首次联网试跑方案（历史计划，执行结果见后文）
+## Historical first connectivity-test plan
 
-范围是 API 连通性检查，不是 MemoryOS 评测：
+This was API connectivity testing, not MemoryOS evaluation:
 
-- 固定输入：`Reply with OK only.`
-- 最多一个 SDK 请求，自动重试为 0，超时为 30 秒。
-- 最大输出 128 tokens；不是费用上限，费用取决于最终提供商计价。
-- 不下载嵌入模型、不建库、不处理数据集、不计算评分。
-- 仅在用户确认本次付费范围后，执行 `../.venv/bin/python -B eval/smoke_api.py --allow-paid`。
-- 不带授权开关时立即退出，不创建客户端或读取配置。
+- Fixed input: `Reply with OK only.`
+- At most one SDK request, retries 0, timeout 30 seconds.
+- Maximum output 128 tokens, not a monetary cap; charges depend on provider rates.
+- No embedding download, memory build, dataset processing or scoring.
+- After explicit authorization, use `../.venv/bin/python -B eval/smoke_api.py --allow-paid`.
+- Without the paid flag, exit before client creation or configuration loading.
 
-真实运行日志保存在 `runs/smoke-*/result.json`，包含代码提交、工作区状态、请求范围、响应和提供商返回的 usage；不记录密钥或 base URL。失败只保留异常类型，避免异常正文泄露请求配置。超时不代表服务端必然没有计费，失败后不自动重跑。
+Real logs under `runs/smoke-*/result.json` retain code commit, working-tree state, request scope, response and provider usage, without keys or base URL. Errors preserve only their type to avoid exposing configuration. A timeout does not prove the server did not charge, and failures are not automatically rerun.
 
-## 后续步骤
+## Initial sequence and implementation issues
 
-1. 确定提供商和模型，在本机填入配置，确认上述首次试跑范围。
-2. 连通性通过后，另行设计极小建库/问答试跑，先明确全流程请求上限，再申请确认。
-3. 冻结单样本、固定 25 题和建库快照；解决原实现的对话完整性与重复实验问题，逐项记录改动。
-4. 正式比较中期记忆页数上限，其他条件固定；保存逐题真实结果和日志。
-5. 根据真实结果补充 README、报告和展示稿，不提前填写分数或结论。
+The plan was to configure the provider, check connectivity, authorize a very small construction/question-answering flow with a request limit, freeze one sample and 25 questions, correct completeness/repeated-build issues, compare retrieval capacities under fixed conditions, and prepare reports from real results only.
 
-## 原实现仍存在的问题
+At this stage the original converter turned 419 utterances into 211 pages: 205 satisfied its build condition and six would be dropped because one side was empty. Pairing had not yet been corrected. Other known issues were repeated construction after loading old memory, duplicate retrieval pages, unstable tie sorting and simplified set F1. The upstream full entry point processed every sample and was unsuitable as a small trial.
 
-conv-26 的 419 条发言被转换为 211 页，其中 205 页符合原建库条件，6 页会因一侧为空被丢弃。本阶段未改配对逻辑。
-其他待处理事项包括旧记忆加载后重复建库、同页重复召回、同分排序不稳定及简化集合 F1。原完整实验入口仍会处理全部样本，不应用它作为试跑入口。
+## 2026-11-05: first real test
 
-## 2026-11-05 首次真实测试
+The user authorized a tiny flow after connectivity, with at most 10 cumulative API requests including retries. SDK retries were disabled and one shared counter enforced the limit.
 
-用户授权：连通性成功后做极小流程试跑；合计最多 10 次 API 请求（含重试）。实际关闭 SDK 重试，以同一计数器约束请求。
+Entry point: `eval/small_flow.py --allow-paid`, using independent directory `runs/small-flow-20261105T150339129990Z/`. `calls.jsonl` and `summary.json` retain real prompts/responses without keys or base URL. Summary source SHA-256 covers code that had not yet been committed at execution time.
 
-入口：`eval/small_flow.py --allow-paid`，使用独立目录 `runs/small-flow-20261105T150339129990Z/`。该目录包含逐请求 `calls.jsonl` 和 `summary.json`；提示词与响应为真实记录，不含密钥和 base URL。源代码 SHA-256 保存在 summary 中，以覆盖运行时尚未提交的源码。
+Observed results:
 
-实际结果：
+- Model: `deepseek-flash`, thinking explicitly disabled.
+- Connectivity response: `OK`.
+- Requests: 1; SDK automatic retries: 0.
+- Server usage: 9 input / 1 output / 10 total tokens, with no unknown usage.
+- The single-page flow stopped at `local_embedding_preflight` with `OSError`. The local cache could not load `all-MiniLM-L6-v2`; no model was downloaded at that point.
+- No memory construction, question-answer evaluation, formal experiment or scoring had run.
 
-- 模型：`deepseek-flash`，显式关闭思考模式。
-- 连通性返回：`OK`。
-- 请求数：1，SDK 自动重试：0。
-- 服务端报告输入 9 tokens、输出 1 token、总计 10 tokens；无用量未知的请求。
-- 单页流程在 `local_embedding_preflight` 阶段因 `OSError` 停止。本地缓存不能完成 `all-MiniLM-L6-v2` 加载；未下载模型。
-- 没有执行记忆构建、问答评测或正式实验，没有评分结果。
+Any later authorized download/recovery had to continue from that one used request, leaving nine of the original 10. Re-running the entry point could not reset the budget. Offline mock validation of a 10-call counter used temporary files/fake SDK and was not real usage.
 
-后续如获准下载嵌入模型，需从本次已用 1 次的累计预算继续，最多剩余 9 次，不能直接重复运行入口而重置预算。离线 mock 的 10 次计数验证使用临时目录及假 SDK，不属于真实用量，未混入本次日志。
+## 2026-11-05: single-page trial completed
 
-## 2026-11-05 单页试跑完成
+The user authorized downloading the original embedding model and continuing within the same 10-request cumulative limit.
 
-用户随后授权下载原嵌入模型，并继续沿用累计 10 次请求上限。
+- Downloaded `sentence-transformers/all-MiniLM-L6-v2`, revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`. File hashes and download metadata were saved in `runs/embedding-download.json`.
+- The first download failed because Xet could not write the default cache. Ordinary HTTP downloading then succeeded without model API calls. Logs are `runs/embedding-download.log` and `runs/embedding-download-attempts.log`.
+- One-page construction succeeded. Retrieval then raised `NameError`: initial global-client cleanup had accidentally removed the `compute_time_decay` import. It was restored. Real local embedding/FAISS regression checks passed, with keyword calls mocked and no API cost.
+- Retrieval resumed from saved mid-term memory without repeating connectivity or construction. The flow question retrieved one page and generated an answer.
+- Cumulative real usage: **8 requests**, **0 automatic retries**, **1,048 input / 103 output / 1,151 total tokens**. No unknown usage or API-request errors occurred.
+- Both local-stop summaries were retained; `workflow-errors.json` records the unavailable cache and missing import.
+- Download/recovery commit: `70b5e6f`; import/checkpoint-recovery fix: `f1ac1e1`. The final `summary.json` retains the successful execution version and source hashes.
 
-- 下载：`sentence-transformers/all-MiniLM-L6-v2`，revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`。仓库内缓存，文件哈希及下载元数据保存在 `runs/embedding-download.json`。
-- 首次下载因 Xet 写默认缓存目录权限失败；切换普通 HTTP 下载后成功，没有模型 API 请求。下载日志在 `runs/embedding-download.log`，首次失败说明在 `runs/embedding-download-attempts.log`。
-- 一页对话建库成功。检索阶段出现 `NameError`：第一阶段清理全局客户端时误删 `compute_time_decay` 导入。已补回；本地真实嵌入和 FAISS 回归检查通过，关键词提取使用 mock，不消耗 API。
-- 从保存的中期记忆恢复检索，没有重复连通性测试或建库。一次流程问题成功召回 1 页并生成回答。
-- 累计 **8 次 API 请求**（包括初次连通性及排错前的调用），**0 次自动重试**。服务端报告 **输入 1048 / 输出 103 / 总计 1151 tokens**。没有用量未知的 API 请求，也没有 API 请求错误。
-- 两次本地流程停止的原始 summary 均已另存，汇总见运行目录 `workflow-errors.json`。首次停止为本地缓存不可加载，第二次为缺少导入。
-- 恢复与模型下载代码提交：`70b5e6f`；修复导入及检索检查点恢复提交：`f1ac1e1`。真实成功运行的版本与源码哈希见最终 `summary.json`。
+The same run directory contains `calls.jsonl`, the answer/full prompt in `answer.json`, `flow.log`, `short.json` and `mid.json`. This trial did not trigger long-term profile updates or validate long-term writes. Trial files were not committed to Git.
 
-逐请求数据在同一个运行目录 `calls.jsonl`；回答和完整回答提示词在 `answer.json`；流程输出在 `flow.log`。记忆文件为 `short.json` 和 `mid.json`；本次没有触发长期画像更新，未验证长期记忆写入。所有文件均为试跑记录，不纳入 Git。
+The question was a constructed flow check, not a benchmark item. It read no QA references, computed no F1 and supported no accuracy claim. The two unused requests were not spent. Formal study still required dialogue corrections, fixed questions/snapshot and a separately approved budget.
 
-本次问题是根据单页流程构造的非 benchmark 问题，不读取 QA 标准答案，没有计算 F1，也不能据此报告准确率。已完成授权范围，剩余 2 次额度不继续使用。正式实验仍需修复对话完整性、冻结题单及建库快照，并另行确认调用预算。
+## Offline preparation for the formal study
 
-## 正式实验离线准备
+Added the pure data module `eval/study_data.py`, correcting cross-session overwrites and lost one-sided utterances. `DynamicUpdate` accepts a page with either side nonempty and supplies Assistant content as topic input only when User content is absent. Normal two-sided pages retain the original topic-input rule.
 
-已增加纯数据模块 `eval/study_data.py`，修复跨 session 覆盖及单边发言丢失；`DynamicUpdate` 接受任一侧非空的页，并为仅有 Assistant 的页提供主题输入。正常双边页的主题输入仍保持原设置。
+`eval/prepare_study.py` exports separate construction inputs, 25 fixed questions, independent scoring references and hash manifests, refusing existing preparation directories. `runs/study-preparation-conv26-v1/` initially contained no memory, outputs or scores.
 
-`eval/prepare_study.py` 生成分离的建库输入、固定 25 题、独立评分参考及哈希清单，拒绝覆盖现有目录。准备目录为 `runs/study-preparation-conv26-v1/`，没有记忆库、模型输出或评分结果。
+`eval/checks/check_study_data.py` checked all 10 samples for lossless utterances, pairing boundaries, one-sided-page propagation, deterministic questions and file separation. Snapshot requirements, variable design and static-call planning are in `STUDY_PLAN.md`. No new real requests occurred during preparation; trial usage remained eight requests / 1,151 tokens.
 
-新增 `eval/checks/check_study_data.py`，离线验证全部 10 个样本发言无损、配对边界、单边页传递、题单确定性与文件隔离。具体后续快照约束、变量设计与静态调用规划见 `STUDY_PLAN.md`。正式执行器尚待实现，本阶段没有新增 API 请求，历史试跑仍累计 8 次、1151 tokens。
+## Construction executor prepared before paid execution
 
-## 正式建库入口已就绪，尚未付费执行
+Added `eval/build_runtime.py` and `eval/build_study.py`: persistent budgets, no automatic failure retries, successful-response replay, page transactions/checkpoints, hash/coverage acceptance and read-only snapshot publication. Construction reads frozen `build_input` and manifests, not questions/references. Default preview does not load configuration or a client.
 
-新增 `eval/build_runtime.py` 和 `eval/build_study.py`，提供持久预算、失败不重试、成功响应重放、逐页事务检查点、哈希与内容覆盖验收、只读快照发布。建库入口只读取冻结的 build_input 和清单，不读问题或评分参考。默认预览不加载配置/客户端。
+Seven offline fault-injection checks in `eval/checks/check_build_runtime.py` passed, as did configuration/data checks. All SDK/model objects were fake and temporary outputs stayed outside real result directories. Real usage remained eight requests / 1,151 tokens. The proposed 1,200-call build limit in `BUILD_GUIDE.md` was initially preview-only, awaiting authorization. Formal memory, snapshot and 25-question results did not yet exist at that point.
 
-`eval/checks/check_build_runtime.py` 的七项离线故障注入检查通过；之前的配置与数据完整性检查也通过。模型与 SDK 全为假对象，临时输出不进入真实结果目录。历史真实请求仍为 8 次，总计 1151 tokens。
+## Complete construction and accepted snapshot
 
-操作说明与拟确认的 1200 次建库上限见 `BUILD_GUIDE.md`；此数值仅用于无请求预览，尚未获准执行。正式库、快照与 25 题评测结果均未生成。
+Construction stopped at three output limits and resumed only after explicit authorization, as detailed in `BUILD_GUIDE.md` and `DIFFERENCES.md`. The last truncated request, 697, was authorized for one resend with a 16,000-token profile-merge limit. Request 698 succeeded.
 
+The final build completed 215 pages / 419 utterances, using 1,052 requests, 351,383 input and 173,361 output tokens. Estimated peak, uncached cost was CNY 2.089654, within cumulative CNY 10 / 1,200-request limits. All three truncations and three explicitly authorized resends were retained. SDK automatic retries were 0, with no new truncation in the final recovery.
 
-## 完整建库及统一快照已验收
+The shared snapshot is `runs/formal-conv26-v1/snapshot`, manifest SHA-256 `501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1`. Independent checks covered source data, 215 unique pages, four memory files and correction/diagnostic provenance hashes. `STUDY_SNAPSHOT.json` pins the same read-only snapshot for every group. Profile redundancy/growth remain; higher output limits did not resolve the algorithmic limitation.
 
-原请求697经用户明确授权，以16000画像合并上限重发一次，记为698，成功。最终完成215页/419条发言，累计1052次建库请求、输入351383/输出173361 tokens，高峰缓存未命中价估算2.089654元，未触及10元/1200次累计上限。三次历史截断与三次明确授权重发全部保留，SDK自动重试0，本轮无新截断。
+Final construction runtime commit: `1cab993`. Final recovery execution took 12 minutes 38 seconds; four active construction rounds totaled 28 minutes 26 seconds, excluding development and waiting for authorization. The eight-call trial remains separate from the 1,052 construction calls. No evaluation/F1 had run when the snapshot was accepted. See `verification-complete.json` in the original run directory.
 
-统一快照为runs/formal-conv26-v1/snapshot，manifest SHA-256为501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1。原数据、215唯一页覆盖、四个记忆文件及修正/诊断provenance的哈希全部独立核对通过。快照只读，STUDY_SNAPSHOT.json固定所有组共用的同一快照。画像冗余和增长仍然存在，不能宣称提高上限解决了算法限制。
+## Offline evaluation preparation before authorization
 
-最后实际运行源码提交1cab993；本轮有效执行12分38秒，四轮合计28分26秒，不含等待授权与开发。小试跑8次独立记账，未混入1052次建库请求。没有运行评测或生成F1。详见运行目录verification-complete.json。
+Preparation pinned snapshot manifest `501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1` and question-list hash `d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7`. `runs/eval-prepared-conv26-v1` contained nine independent copies; formal execution would create fresh copies from the source snapshot.
 
-## 正式评测离线准备已完成（尚未获准付费运行）
+Added `prepare_evaluation.py`, `audit_evaluation.py`, `evaluation_common.py`, `run_evaluation.py` and `score_evaluation.py`. Original retrieval/search functions and simplified F1 matched upstream ASTs, without deduplication, sorting changes or cross-repetition answer reuse.
 
-固定已发布manifest 501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1与25题hash d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7。准备目录runs/eval-prepared-conv26-v1有9份独立副本；正式入口还会从只读快照创建独立新副本。
+All 25 candidate-session cosine lower bounds exceeded 0.1, with minimum 0.2244379, independent of nonnegative keyword bonuses. Formal keyword calls were nevertheless retained. Offline mean pages for capacities 5/10/20 were 5/8.96/13; unique-page means were 4.4/8.04/11.4. These were structural checks, not answer scores. The first diagnostic exited with native-library code 139. Importing upstream `utils` before FAISS and setting FAISS/OMP to one thread stabilized it; every group shared that environment.
 
-新增prepare_evaluation.py、audit_evaluation.py、evaluation_common.py、run_evaluation.py及score_evaluation.py。原retrieve/search_sessions_by_summary/search_knowledge与上游简化F1的AST逐项相同，不去重、不改排序，不复用跨重复答案。
+Four initial offline checks passed: fixed data/copy isolation; fake-SDK 450 independent calls and no memory writes; original F1 and sample SD of three run means; and default preview without client creation. Fake data stayed in temporary directories. The proposed separate evaluation budget was 450 requests / CNY 20, initially awaiting authorization. Construction remained at 1,052 calls with an unchanged snapshot. See `EVALUATION_GUIDE.md` for subsequent budget/scheduling checks.
 
-离线25题候选段余弦下界全部超过0.1，最低0.2244379，数学上不依赖非负关键词加分。仍保留正式每题一次关键词调用。三种容量的离线平均召回页数5/8.96/13，唯一页均值4.4/8.04/11.4；这不是回答或评分结果。首次诊断原生库进程退出139，采用上游utils先于FAISS的导入顺序并统一FAISS/OMP为1线程后稳定，全部实验组共用该环境设置。
+## Completed formal evaluation: 225 answers
 
-4项离线评测检查通过：固定数据与副本隔离、假SDK完整450次独立请求及零记忆写回、仓库F1与三次均值样本标准差、默认预览不构造客户端。假数据只在临时目录，不混入真实结果。拟450请求/20元评测阶段预算，待用户确认，尚未执行；建库原1052次请求和快照不变。完整说明见EVALUATION_GUIDE.md。
+After topping up, the user cancelled reduced plan B and restored 25 questions, three capacities and three repetitions, explicitly authorizing a separate 450-request / CNY 20 budget. Actual execution used 450 requests and produced 225 valid answers, with 0 failures, truncations or automatic retries. Usage was 2,264,622 input / 2,590 output tokens, estimated peak/uncached cost CNY 4.549964, over an effective span of 553.479 seconds.
 
+Capacity 5/10/20 simplified F1 means were 0.41734756 / 0.45232937 / 0.47478499. Sample SDs across three run means were 0.02452401 / 0.00566280 / 0.01141776. Runtime commit: `fc48ea6`. Full results are in `EVALUATION_RESULTS.md`; original directory: `runs/eval-results-conv26-v1`. The 225 question records, 450 complete requests, individual cost reservations and independent `verification.json` were retained.
 
-## 正式225回答评测已完成
-
-用户充值后取消B并恢复25题三容量各3次，授权独立450次/20元。实际450次请求、225个有效回答、0失败/截断/自动重试，输入2264622、输出2590 tokens，最高价全未命中估算4.549964元，有效跨度553.479秒。
-
-容量5/10/20简化F1均值分别0.41734756/0.45232937/0.47478499，三次运行均值的样本SD分别0.02452401/0.00566280/0.01141776。实际运行提交fc48ea6。完整结果EVALUATION_RESULTS.md，运行目录runs/eval-results-conv26-v1。225逐题结果、450完整请求、逐条费用预留及独立verification.json均保存。
-
-本次按每题交错三个容量，重复间轮换起始容量；九份独立副本、原快照及题单哈希未变。原检索和简化F1不改，完整输入不裁剪，预留采用官方离线tokenizer加保守余量和完整UTF8请求字节底线。分类结果并非全面单调改善，不能据单对话25题推广论文结论。
+Execution interleaved capacities per question and rotated the starting capacity across repetitions. Nine independent copies, source snapshot and question-list hashes stayed unchanged. Original retrieval and simplified F1 were retained. Full prompts were not cropped. Reservations used the official offline tokenizer with conservative margins and a full UTF-8 request-byte floor. Category results did not improve monotonically; this one-conversation, 25-question study does not establish the paper's broader conclusions.
