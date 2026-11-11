@@ -1,89 +1,96 @@
-# MemoryOS conv-26 正式评测报告
+# MemoryOS conv-26 evaluation results
 
-**真实评测已完成：225个有效回答、450次请求，0失败、0截断、0自动重试。** 没有使用精简A/B方案，没有扩额或复用跨重复答案。
+**The formal evaluation is complete: 225 valid answers, 450 requests, no failures, no truncated responses and no automatic retries.** The reduced A/B plans were not used. There were no budget increases or reused answers across repetitions.
 
-## 总体结果
+## Overall results
 
-以下F1范围为0–1，不是“答对题目比例”。每次运行先对25题求平均，每组均值与样本标准差再由3个运行均值计算（ddof=1）。各组均有75个回答，但SD不把75题当作75次独立运行。
+F1 ranges from 0 to 1 and is not the proportion of correctly answered questions. Each run first averages its 25 question scores. The group mean and sample standard deviation are then calculated from the three run means (`ddof=1`). Each group contains 75 answers, but these are not treated as 75 independent runs when computing SD.
 
-| queue_capacity | 简化F1均值 ± 样本SD | 平均页数 / 唯一页数 | 输入 / 输出tokens（含关键词） | 活动耗时秒 | 高峰全未命中估算 |
+| queue_capacity | Mean simplified F1 ± sample SD | Mean pages / unique pages | Input / output tokens, including keywords | Active time, seconds | Peak, uncached cost estimate |
 |---|---|---|---|---:|---:|
-| 5 | 0.41735 ± 0.02452 | 5.00 / 4.40 | 709,353 / 860 | 178.39 | ¥1.425586 |
-| 10 | 0.45233 ± 0.00566 | 8.96 / 8.04 | 755,565 / 871 | 187.65 | ¥1.518098 |
-| 20 | 0.47478 ± 0.01142 | 13.00 / 11.40 | 799,704 / 859 | 186.34 | ¥1.606280 |
+| 5 | 0.41735 ± 0.02452 | 5.00 / 4.40 | 709,353 / 860 | 178.39 | CNY 1.425586 |
+| 10 | 0.45233 ± 0.00566 | 8.96 / 8.04 | 755,565 / 871 | 187.65 | CNY 1.518098 |
+| 20 | 0.47478 ± 0.01142 | 13.00 / 11.40 | 799,704 / 859 | 186.34 | CNY 1.606280 |
 
-基准值为10。本固定题单上20的总体均值最高；相对基准10高约0.02246 F1，相对5高约0.05744。这只是小样本描述，未作显著性证明，也不代表更大容量总能更好。
+The baseline is 10. Capacity 20 had the highest overall mean on this fixed question set: about 0.02246 above 10 and 0.05744 above 5. These are descriptive differences from a small sample, without a significance test. They do not establish that larger capacity always performs better.
 
-## 分类结果：类内均值 ± 三次运行样本SD
+## Category results: within-category mean ± sample SD across three runs
 
-| 容量 | 类别1（每次6题） | 类别2（每次6题） | 类别3（每次6题） | 类别4（每次7题） |
+| Capacity | Category 1: multi-hop, 6 questions/run | Category 2: temporal, 6 questions/run | Category 3: open-domain, 6 questions/run | Category 4: single-hop, 7 questions/run |
 |---|---|---|---|---|
 | 5 | 0.57290 ± 0.03356 | 0.46296 ± 0.13472 | 0.24919 ± 0.09623 | 0.38906 ± 0.04287 |
 | 10 | 0.67306 ± 0.02348 | 0.57253 ± 0.01711 | 0.19054 ± 0.00535 | 0.38449 ± 0.01443 |
 | 20 | 0.68326 ± 0.00250 | 0.58241 ± 0.00000 | 0.20289 ± 0.01604 | 0.43690 ± 0.03804 |
 
-类别3中容量5均值高于10和20；类别4中10也没有优于5。不能用总体排序替代逐类别判断。总体25题等权，因此不是四类均值再等权。
+In category 3, capacity 5 had a higher mean than either 10 or 20. In category 4, 10 also did not outperform 5. Overall ranking does not describe every category. The overall score gives equal weight to all 25 questions, rather than equal weight to the four category means.
 
-## 三次独立运行均值
+## Means of the three independent answer-generation runs
 
-| 容量 | 第1次 | 第2次 | 第3次 |
+| Capacity | Run 1 | Run 2 | Run 3 |
 |---|---:|---:|---:|
 | 5 | 0.39074062 | 0.42225577 | 0.43904629 |
 | 10 | 0.45285981 | 0.45770829 | 0.44642002 |
 | 20 | 0.48442868 | 0.46217760 | 0.47774870 |
 
-## 固定实验设计与执行顺序
+## Fixed design and execution order
 
-- 同一conv-26完整记忆快照，19个sessions、215页、419条发言。manifest SHA-256：501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1。
-- 固定25题：类1–3各取原顺序前6题，类4取前7题，按原QA全局索引排序。不根据模型输出挑题。题单SHA-256：d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7。
-- 9份独立副本，每次运行初始内容与只读快照完全相同。没有评测对话/预测答案写回，没有更新画像。
-- 唯一人为实验变量为queue_capacity=5/10/20。候选段top_k=5、阈值均.1、长期top_k=10、温度.7、提示词、模型及权重等设置固定。
-- 保留原检索算法、重复页、id(page)同分处理，不新增去重或候选缓存。实际各容量对每题的有序召回内容在3次重复间均一致（每组25/25题），但仍保留原同分规则的普遍限制。
-- 每题轮流执行三容量。重复1为5/10/20，重复2为10/20/5，重复3为20/5/10，避免固定容量总是先执行。
-- 全部450个请求操作ID与响应ID唯一，225次关键词+225次回答；相同题目在不同重复仍发新请求。没有生成答案缓存复用。
-- 原标准答案和evidence只由离线评分脚本读取，生成入口只获得问题文本和既有记忆。错误答案/拒答若是正常完整响应仍纳入F1，不因低分而删题。
-- 原retrieval和仓库evalution_loco.calculate_f1函数与上游对应函数AST保持一致。指标是小写正则分词后的集合F1，不是官方LoCoMo评测实现。
+- Every run used the same complete `conv-26` memory snapshot: 19 sessions, 215 pages and 419 utterances. Manifest SHA-256: `501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1`.
+- The 25 fixed questions were the first six in each of categories 1–3 and the first seven in category 4, in original order, then sorted by global QA index. Selection did not depend on model outputs. Question-list SHA-256: `d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7`.
+- Nine independent copies started with contents identical to the frozen snapshot. Evaluation conversations and predicted answers were not written back, and profiles were not updated.
+- The only controlled experimental variable was `queue_capacity=5/10/20`. Candidate-session `top_k=5`, thresholds of `.1`, long-term `top_k=10`, temperature `.7`, prompts, model and embedding weights stayed fixed.
+- The original retrieval algorithm, duplicate pages and `id(page)` tie handling were retained. No deduplication or candidate cache was added. For every capacity, the ordered retrieved contents for all 25 questions were identical across the three repetitions. This observation does not remove the general limitation of the original tie rule.
+- Capacities were interleaved for each question: 5/10/20 in repetition 1, 10/20/5 in repetition 2 and 20/5/10 in repetition 3. Thus, one capacity was not always executed first.
+- All 450 request operation IDs and response IDs were unique: 225 keyword requests and 225 answer requests. Each repetition sent new requests even for the same question. Generated answers were not reused from a cache.
+- Reference answers and evidence were read only by offline scoring. Generation received question text and existing memory. Incorrect answers and refusals were still included in F1 if they were normal complete responses; low scores did not cause questions to be dropped.
+- The original retrieval implementation and `evalution_loco.calculate_f1` function matched their upstream counterparts at the function AST level. The metric is set F1 over lowercase, regex-tokenized words, not the official LoCoMo scoring implementation.
 
-## Token、耗时和费用
+## Tokens, time and estimated cost
 
-| 阶段 | 请求数 | 输入tokens | 输出tokens | 总tokens |
+| Stage | Requests | Input tokens | Output tokens | Total tokens |
 |---|---:|---:|---:|---:|
-| 检索关键词 | 225 | 12,141 | 1,523 | 13,664 |
-| 生成回答 | 225 | 2,252,481 | 1,067 | 2,253,548 |
-| 合计 | 450 | 2,264,622 | 2,590 | 2,267,212 |
+| Retrieval keywords | 225 | 12,141 | 1,523 | 13,664 |
+| Answer generation | 225 | 2,252,481 | 1,067 | 2,253,548 |
+| Total | 450 | 2,264,622 | 2,590 | 2,267,212 |
 
-有效执行跨度553.479秒，约9分13秒。表中各组活动耗时为自身75题的检索+回答累计，合计约552.39秒；交错等待不算作该组处理时间。completed.json另保留运行跨度，不混同活动时间。模型本地预热在问题计时之前完成；这些耗时包含网络/服务端波动，不能只据此推断算法速度优劣。
+The effective execution span was 553.479 seconds, about 9 minutes 13 seconds. Each group's active time in the overall table sums retrieval and answering for its own 75 questions. The groups total about 552.39 seconds; interleaved waiting is not counted as a group's processing time. `completed.json` separately retains run spans. Local model warm-up occurred before question timing. Network and server variability are included, so these times alone cannot establish algorithmic speed differences.
 
-预算账本全部按最高公示价、输入缓存未命中计算：输入每百万¥2，输出每百万¥8，总估算 **¥4.549964**，低于已授权20元。[官方价格来源](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)。这不是账户实扣，未查询余额。服务器另报告1,686,132输入tokens命中缓存、578,490未命中；若仍按高峰分开计算，缓存感知估算约¥1.24514528，也不是已核实的账单。
+The budget ledger used the highest published rates verified at execution time and assumed all input tokens missed the cache: CNY 2 per million input tokens and CNY 8 per million output tokens. The total estimate was **CNY 4.549964**, below the authorized CNY 20. [Historical pricing source](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/). This is not the verified account charge; the account balance was not queried. The server separately reported 1,686,132 cached input tokens and 578,490 uncached input tokens. Applying the recorded peak cache rates gives a cache-aware estimate of about CNY 1.24514528, also not a verified bill.
 
-本次450次/4.549964元属于独立评测阶段，不与之前1052次建库/2.089654元估算或最早8次小试跑混在一起。没有为额度重新起账，所有评测请求累计在同一账本。
+These 450 requests / CNY 4.549964 belong to the separate evaluation phase. They exclude the earlier 1,052 construction requests / CNY 2.089654 estimate and the earliest eight small trial requests. All evaluation requests accumulated in one ledger, without restarting accounting to obtain more budget.
 
-## 实际完整输入费用预留核查
+## Audit of full-input cost reservations
 
-旧2.113152元=(1048576×2+2000×8)/百万，是整个上下文预留，不适合作为实际输入长度说明。本次使用官方文档提供的离线tokenizer，trust_remote_code=False，显式truncation=False，对完整聊天模板计数。按max(ceil(离线输入tokens×1.25)+512, 完整请求参数UTF8字节数+1024)预留输入，再预留最大2000输出费用，不裁剪任何消息。
+The earlier reservation of CNY 2.113152 was `(1048576 × 2 + 2000 × 8) / 1000000`: a full-context reservation, not a measure of actual input length. Evaluation instead counted the complete chat template with the official offline tokenizer, `trust_remote_code=False` and explicit `truncation=False`. Reserved input tokens were:
 
-[官方token用量文档](https://api-docs.deepseek.com/zh-cn/quick_start/token_usage/)提供下载包，其SHA-256为e7310d1dafe0a86d8a5629fe78a7c763760f651db9b8682718a1781dcd6fe495。离线先检查历史1052请求及75种完整回答提示词，再独立重算本次450请求的完整输入预留；实际server输入与官方离线计数最大相差2tokens，全部被覆盖。
+```text
+max(ceil(offline_input_tokens * 1.25) + 512,
+    complete_request_parameters_utf8_bytes + 1024)
+```
 
-每次发送前检查累计已知费用+未知结果预留+下一次最大发送预留不超20元；整个过程该数值最高 **¥4.643972**。请求数恰450、无在途未知用量、无未释放预留。若失败或截断，程序会保存valid_answer=false的.failed.json并停止，不作为正常答案评分；本次这些异常没有发生。
+The maximum cost for 2,000 output tokens was then added. No message was cropped.
 
-## 已记录的运行修正和限制
+The archive linked by the [official token-usage documentation](https://api-docs.deepseek.com/zh-cn/quick_start/token_usage/) had SHA-256 `e7310d1dafe0a86d8a5629fe78a7c763760f651db9b8682718a1781dcd6fe495`. Offline checks first covered the historical 1,052 requests and 75 distinct complete answer prompts. An independent audit then recomputed reservations for all 450 evaluation requests. Server-reported input counts differed from official offline counts by at most two tokens, and every reservation covered the reported usage.
 
-建库阶段保留了无损对话转换、客户端统一及元摘要100→300、画像合并2000→4000→16000等共用修正，以及三次被明确授权的重发。画像冗余和持续增长仍存在，提高输出上限没有修复它们。所有评测组共用同一个最终快照及修正历史，不按组重建。
+Before each request, the program checked that known cumulative cost, reservations for unknown outcomes and the next request's maximum reservation stayed within CNY 20. Their maximum combined value was **CNY 4.643972**. There were exactly 450 requests, no unresolved in-flight usage and no unreleased reservations. A failure or truncation would save a `.failed.json` record with `valid_answer=false` and stop rather than be scored as a normal answer. Neither occurred in this evaluation.
 
-这次只有一个对话、固定25题和3次重复，且用DeepSeek替换上游gpt-4o-mini，存在共用运行修正、原检索重复和简化F1限制。结果不能直接等同论文完整基准成绩，也不能推广到完整LoCoMo。F1变化还可能受模型输出随机性影响，不声称已证明普遍因果规律。
+## Shared corrections and limitations
 
-## 版本、验收与文件
+Construction included lossless dialogue conversion, unified client configuration and shared output-limit changes: metadata summaries from 100 to 300, and profile merging from 2,000 to 4,000 and then 16,000 tokens. Three resends were explicitly authorized. Profile redundancy and continued growth remain; higher output limits did not fix them. All evaluation groups used the same final snapshot and correction history, without rebuilding memory per group.
 
-实际运行提交：fc48ea6fee9f013fe2476666611edfdb78786023。原上游提交587ed7755c7aed179965792830ff1b5ad9a6fa92。
+This study covers one conversation, 25 selected questions and three repetitions. It substitutes DeepSeek for upstream `gpt-4o-mini` and includes shared runtime corrections, original retrieval duplicates and simplified F1. The results are not the paper's full benchmark scores and cannot be generalized to all LoCoMo data. Model-output randomness may also contribute to F1 differences. No universal causal claim is established.
 
-独立核验确认9份副本与原快照哈希未变、题单未变，225题行与450个原始响应逐项关联正确，F1和样本SD逐题重算一致，预算未越界。构建账本保持1052次不变。
+## Versions, acceptance checks and files
 
-结果目录：`/Users/caca/Documents/MemoryOS-Reproduction/MemoryOS/runs/eval-results-conv26-v1`。
+Actual execution commit: `fc48ea6fee9f013fe2476666611edfdb78786023`. Upstream baseline: `587ed7755c7aed179965792830ff1b5ad9a6fa92`.
 
-- scores.json：三组整体、类别、各次运行和逐题F1。
-- kXX-rY/qNN.json：逐题原始答案、有效标记、召回页ID/内容哈希、耗时、用量和请求关联。
-- calls.jsonl：完整输入、真实响应、usage、结束原因、完整输入计数与发送前预留。
-- verification.json：本报告的独立复算证据。
-- config.json、status.json、evaluation.log与9份初始记忆副本：版本、参数、完成状态和隔离证据。
+Independent verification confirmed unchanged hashes for the nine memory copies, original snapshot and question list; correct links between 225 answer records and 450 raw responses; matching per-question F1 and sample SD recomputations; and compliance with budget limits. The construction ledger remained at 1,052 requests.
 
-没有虚构或补齐结果；225个正常响应全部纳入统计。尚未制作最终展示稿，后续可在这些真实结果上整理作业报告与展示。
+Original local results directory: `/Users/caca/Documents/MemoryOS-Reproduction/MemoryOS/runs/eval-results-conv26-v1`. This is a historical path, not a required path on another machine. Public copies are in [evidence/](evidence/README.md).
+
+- `scores.json`: overall, category, per-run and per-question F1 for all three groups.
+- `kXX-rY/qNN.json`: raw answer, validity flag, retrieved-page IDs/content hashes, timing, usage and request links for each question.
+- `calls.jsonl`: full inputs, real responses, usage, finish reasons, complete-input counts and pre-request reservations.
+- `verification.json`: independent recomputation evidence supporting this report.
+- `config.json`, `status.json`, `evaluation.log` and nine initial memory copies: versions, parameters, completion status and run-isolation evidence.
+
+All 225 normal responses were included. No results were fabricated or filled in. This file documents the completed experiment; the accompanying assignment report and presentation were prepared afterward.
