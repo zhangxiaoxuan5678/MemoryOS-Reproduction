@@ -1,68 +1,71 @@
-# conv-26 正式评测（已完成，历史准备与授权保留）
+# conv-26 evaluation: completed run and historical preparation
 
-正式评测已完成450次真实请求、225有效答案，结果见EVALUATION_RESULTS.md。下文保留各阶段准备与预算提案，仅最后明确授权生效；原450次预算已用完，不构成再次调用的授权。完整快照与建库账本不变。
+The formal evaluation is complete: **450 real requests and 225 valid answers**. See [EVALUATION_RESULTS.md](EVALUATION_RESULTS.md). This guide retains the preparation steps and budget proposals in chronological context. The final authorization superseded the earlier proposals. Its 450-request allowance has been used; this document does not authorize another paid run. The construction ledger and shared snapshot remain unchanged.
 
-## 冻结输入与独立状态
+## Frozen inputs and independent state
 
-快照由STUDY_SNAPSHOT.json固定，manifest SHA-256：501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1。四个记忆文件和所有provenance哈希重新通过；原快照只读。
+`STUDY_SNAPSHOT.json` pins the snapshot. Its manifest SHA-256 is `501867dfe03c5ccdd29bd23ed4ce78a9bdf492c980f14ec427a537e7797b42d1`. Hashes for all four memory files and provenance files were rechecked. The source snapshot is read-only.
 
-准备目录runs/eval-prepared-conv26-v1保存spec.json、questions.json、selection-audit.json、9份独立记忆副本和离线审计。正式运行还会从原只读快照另行创建9份新副本，不复用离线审计中已访问的对象。检索产生的访问计数只作用于当前运行内存；不调用任何写入/画像更新入口，每组结束检查文件哈希，并复核源快照。
+The preparation directory, `runs/eval-prepared-conv26-v1`, contains `spec.json`, `questions.json`, `selection-audit.json`, nine independent memory copies and offline audits. Formal execution creates another nine fresh copies from the source snapshot, rather than reusing objects accessed during offline auditing. Retrieval access counts affect only the current run's in-memory state. No memory-write or profile-update entry point is called. File hashes are checked after each group, and the source snapshot is checked again.
 
-25题严格按原索引：类别1–3各前6题、类别4前7题，再按原全局QA顺序排序。类别数6/6/6/7，原始零基索引：
+The 25 questions are the first six in each of categories 1–3 and the first seven in category 4, then sorted by original global QA index. Category counts are 6/6/6/7. Original zero-based indices:
 
-0,1,2,3,4,5,6,7,8,9,11,13,14,15,22,27,30,42,82,83,84,85,86,87,88。
+```text
+0,1,2,3,4,5,6,7,8,9,11,13,14,15,22,27,30,42,82,83,84,85,86,87,88
+```
 
-questions.json SHA-256：d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7。
+`questions.json` SHA-256: `d05828c6775a6d0bace1ffa43c14432f1e1c1ebb09714b9a74f47ad4863dc5d7`.
 
-题目不按模型回答选择。生成入口只读question_id、question及构建好的记忆，不读scoring_only/references.json，不把category/evidence/标准答案传入生成函数。评分脚本独立加载参考答案。评测问题与预测答案均不写回记忆。
+Questions were not selected using model answers. Generation reads only `question_id`, `question` and the completed memory, not `scoring_only/references.json`. Categories, evidence and reference answers are not passed to generation. A separate scoring script loads the references. Evaluation questions and predictions are not written back to memory.
 
-## 唯一人为实验变量与原算法保持
+## Controlled variable and preservation of the original algorithm
 
-queue_capacity=5、10、20；10为原main_loco_parse入口的基准。每组3次，每次25题，共9次运行、225个回答。
+The settings are `queue_capacity=5`, `10` and `20`; 10 is the baseline in the original `main_loco_parse` entry point. Three runs of 25 questions per setting give nine runs and 225 answers.
 
-固定模型deepseek-flash、关闭思考、原提示词与temperature=.7、候选段top_k=5、三个检索阈值.1、长期top_k=10、回答/关键词输出上限均2000、短期容量1、中期2000、同一模型权重与编码设置。FAISS/OMP统一1线程，既是统一运行环境设置，也避免首次诊断出现的原生库崩溃，不修改相似度算法。嵌入只加载已下载原权重，不联网。正式执行在各次计时开始前统一完成一次本地模型预热，不增加API请求，避免首组承担模型冷启动耗时。
+Shared settings are `deepseek-flash`, thinking disabled, original prompts, `temperature=.7`, candidate-session `top_k=5`, three retrieval thresholds of `.1`, long-term `top_k=10`, answer/keyword output limits of 2,000, short-term capacity 1, mid-term capacity 2,000, and identical model weights and encoding settings. FAISS/OMP uses one thread throughout. This shared environment setting also avoided a native-library crash seen in the first diagnostic; it does not change the similarity algorithm. Embeddings load only the original downloaded weights, without networking. One local model warm-up occurs before timing starts, without an API request, so the first group does not bear the cold-start cost.
 
-原retrieve、search_sessions_by_summary、search_knowledge及简化F1函数，与上游587ed775对应函数AST一致。保留重复页，不增加去重、稳定排序、关键词缓存或检索结果共享。id(page)同分处理可能在不同加载实例间引入变化，模型本身也有随机性，均如实保留和报告。
+The original `retrieve`, `search_sessions_by_summary`, `search_knowledge` and simplified F1 functions match the corresponding upstream `587ed775` functions at the AST level. Duplicate pages and `id(page)` tie handling remain. No deduplication, stable sorting, keyword cache or shared retrieval results were added. Tie handling may vary across independently loaded objects, and model generation is stochastic; both limitations are retained and reported.
 
-每个运行/问题拥有独立请求操作ID。临时假SDK回归检查验证450个唯一操作、225次回答/225次关键词；不跨重复使用旧答案。正式入口拒绝已有结果目录，不会静默从旧答案充数。发生错误保留已完成记录并停止；本版不自动恢复失败评测或重发。不完整225条时评分工具拒绝给出最终三组结果。
+Every run/question has independent request operation IDs. Regression checks with a temporary fake SDK verified 450 unique operations: 225 keyword calls and 225 answer calls. Answers are not reused across repetitions. The formal entry point rejects an existing results directory. Errors preserve completed records and stop execution; this version does not automatically recover or resend a failed evaluation. The scorer refuses final three-group statistics if the required 225 valid answers are incomplete.
 
-## 原检索是否需要模型
+## Does retrieval require a model call?
 
-需要。每题中期检索调用llm_extract_keywords一次；query/page/长期知识嵌入均为本地模型。当前完整快照中期非空，因此每题一检索辅助+一回答，合计450次请求，无需重新建库。
+Yes. Each question calls `llm_extract_keywords` once for mid-term retrieval. Query, page and long-term knowledge embeddings are computed locally. The completed snapshot has nonempty mid-term memory, so each question requires one retrieval-assistance call and one answer call: 450 requests in total. No new memory build is needed.
 
-离线审计拦截网络，不构造OpenAI客户端。对25题，FAISS前5段摘要余弦最低0.2244379，大于.1；关键词重合分非负，所以不论关键词输出为何，这些候选段都会通过阈值。离线仅用零重合下界运行原代码核查后续页选择，保留数学证书，不把空集合冒充真实LLM关键词结果。正式运行仍发出原关键词请求，不应用此证明删减调用。
+The offline audit blocks network access and does not construct an OpenAI client. Across the 25 questions, the minimum summary cosine among the first five FAISS candidate sessions was 0.2244379, above `.1`. Keyword-overlap scores are nonnegative, so those candidates pass regardless of keyword output. The audit used zero overlap as a lower bound to check later page selection with the original code. It retained this mathematical certificate rather than presenting an empty keyword set as an actual LLM result. Formal evaluation still sent the original keyword requests; the certificate was not used to remove calls.
 
-## 离线结构检查（不是回答或评分结果）
+## Offline structural check: not answer scores
 
-| 容量 | 召回页数最小/均值/最大 | 唯一page_id最小/均值/最大 |
+| Capacity | Retrieved pages: min / mean / max | Unique page_id values: min / mean / max |
 |---|---|---|
 | 5 | 5 / 5 / 5 | 3 / 4.4 / 5 |
 | 10 | 5 / 8.96 / 10 | 4 / 8.04 / 10 |
 | 20 | 5 / 13 / 20 | 4 / 11.4 / 18 |
 
-5与10有2/25题内容相同；10与20有10/25题内容相同；5与20有2/25题内容相同。本次离线检查中顺序与内容集合两种比较的相同题数一致。具体page_id、原顺序内容哈希、唯一数和长期知识数逐题保存在offline-audit.json。统计唯一数只作观测，不用于筛选或去重。
+Retrieved contents were identical for 2/25 questions between 5 and 10, 10/25 between 10 and 20, and 2/25 between 5 and 20. Ordered-content and content-set comparisons gave the same counts in this check. Per-question page IDs, ordered-content hashes, unique counts and long-term knowledge counts are saved in `offline-audit.json`. Unique counts are observations and do not filter or deduplicate retrieval.
 
-这些是一次本地预检查的证书与结构结果，不是9次真实评测；原id(page)同分变化仍可能产生噪声。实际各次运行继续记录真实召回内容，不能用离线数值代替。
+These are certificates and structural results from one local precheck, not nine formal evaluation runs. The general noise risk from `id(page)` remains. Formal runs record their actual retrieved contents rather than substitute the offline values.
 
-## 评分和统计口径
+## Scoring and statistics
 
-score_evaluation.py直接导入仓库evalution_loco.calculate_f1，不改集合分词、大小写和正则逻辑。每次运行对25题先求平均，再对每组3个运行均值报告均值与样本标准差（ddof=1）。各类别也先在每次运行内求类均值，再对3次类均值统计；类1–3各6题、类4共7题。总体不是四类等权重均值，而是25题等权。
+`score_evaluation.py` imports `evalution_loco.calculate_f1` directly, preserving its set tokenization, lowercase conversion and regex logic. Each run averages 25 question scores; each capacity then reports the mean and sample SD of its three run means (`ddof=1`). Category means are first calculated within each run, then summarized across three runs. Categories 1–3 have six questions each and category 4 has seven. The overall score weights 25 questions equally, rather than weighting the four categories equally.
 
-同时保存逐题F1、关键词和回答token用量、总用量、每题检索/回答/总耗时、实际页数、唯一页数及有序内容哈希；每运行记录总耗时。准备阶段当时没有真实分数；现已完成，见 EVALUATION_RESULTS.md 和 evidence/scores.json。
+Saved observations include per-question F1, keyword/answer token usage and total usage, retrieval/answer/total time, actual pages, unique pages and ordered-content hashes. Each run also records elapsed time. Preparation itself produced no real scores. Completed scores are in `EVALUATION_RESULTS.md` and `evidence/scores.json`.
 
-## 请求数和费用预算提案：待用户确认
+## Historical request and cost proposal
 
-- 225次关键词提取+225次新回答，正常完成共450次请求。
-- 不自动重试，单请求输出最多2000；450次为全评测合计，不是每组。
-- 独立评测阶段建议上限：450次请求、人民币20元。不自动动用/重置之前的建库10元预算，实际执行前需要新的明确确认。
-- 仍按高峰、缓存未命中价格保守计费：每百万输入2元、输出8元，不预设缓存折扣。[官方价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)。
-- 最终画像34397字符，导致回答提示词约42458–55675字符/题。225个回答的离线输入合计10414695字符；225次关键词提示词合计60786字符。
-- 从真实建库52个长输入观测到字符/token比中位数4.55046、最小3.84453。用该经验比率估算，而非声称为DeepSeek准确分词：中心输入约230万tokens；回答按每题30–100输出tokens、关键词5–15，合计7875–25875输出tokens，高峰价约4.67–4.81元。考虑分词和召回变化，可按约5–7元作常规规划。
-- 保守场景：用经验最小字符/token比再加20%输入余量，输入约327万tokens；450次输出全部取2000上限共90万tokens，合计约13.74元。该情景不是数学费用上界。
-- 金额闸门与建库采用同一已测试账本逻辑，每次发送前保守预留1048576输入+2000输出费用2.113152元；完整usage后释放差额，失败/未知保留预留并停止。因此临近20元时可能提前停止，留出下一请求的最大发送费用。无自动扩额。
-- 建库已用1052次、估算2.089654元独立保留；本次准备未新增请求。预计费用不等同账户实扣或金额承诺。
+The following estimates were made before execution. They are retained as planning history, not actual usage or current pricing:
 
-## 安全预览与待授权执行
+- 225 keyword calls plus 225 new answers: 450 requests in a complete evaluation, with no automatic retries and up to 2,000 output tokens per call.
+- Proposed independent limits: 450 requests / CNY 20. The previous CNY 10 construction allowance would neither be reused nor reset. New explicit authorization was required.
+- Conservative recorded rates: CNY 2 per million input tokens and CNY 8 per million output tokens, assuming cache misses. [Historical pricing source](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/).
+- The final profile contained 34,397 characters, producing answer prompts of about 42,458–55,675 characters per question. The 225 answer prompts totaled 10,414,695 characters; the 225 keyword prompts totaled 60,786.
+- In 52 historical long construction inputs, the median character/token ratio was 4.55046 and the minimum was 3.84453. These empirical ratios were estimates, not exact DeepSeek tokenization. A central scenario used about 2.3 million input tokens, 30–100 answer output tokens/question and 5–15 keyword output tokens, totaling 7,875–25,875 output tokens. Its peak estimate was CNY 4.67–4.81; allowing for tokenization and retrieval variation suggested CNY 5–7 for planning.
+- A stress scenario used the minimum empirical character/token ratio plus a 20% input margin: about 3.27 million input tokens, and 450 outputs all reaching 2,000 tokens, or 900,000 output tokens. It estimated CNY 13.74. This was not a mathematical upper bound.
+- The initial proposal used the construction ledger's full-context reservation: 1,048,576 input plus 2,000 output tokens, or CNY 2.113152 per request. Actual usage would release the difference; failed/unknown outcomes would retain the reservation and stop. This could stop early near CNY 20. The final authorization below replaced the input-reservation method.
+- Construction remained separately recorded at 1,052 requests / CNY 2.089654 estimated. Preparation added no real requests. Estimates are neither verified account charges nor price guarantees.
+
+## Preview and execution entry points
 
 ```sh
 ../.venv/bin/python -B eval/run_evaluation.py \
@@ -71,26 +74,33 @@ score_evaluation.py直接导入仓库evalution_loco.calculate_f1，不改集合�
   --max-requests 450 --max-cost-cny 20
 ```
 
-上述缺少--allow-paid，仅验证冻结输入并打印计划，不加载配置或创建客户端。实际付费必须在明确确认后才添加--allow-paid。结果目录不允许预先存在；失败不会自动另起新预算。
+Without `--allow-paid`, this validates frozen inputs and prints the plan, without loading configuration or creating a client. Paid execution requires separate explicit authorization and the added flag. The results directory must not already exist. Failure does not automatically start a new budget. The completed experiment's authorization is not reusable.
 
-完整运行完成后才能离线评分：
+Offline scoring after a complete run:
 
 ```sh
 ../.venv/bin/python -B eval/score_evaluation.py --run-dir runs/eval-results-conv26-v1
 ```
 
-## 结论边界
+## Limits on interpretation
 
-仅一个对话、固定25题、每组3次，样本小且按类别取原顺序前题。模型已更换为DeepSeek，另有对话完整性、客户端、输出上限、检查点等共用运行修正；原画像冗余和检索重复仍存在。结果不能直接等同论文完整基准成绩，也不能将简化F1称作官方评分或推广到全LoCoMo。
+One conversation, 25 fixed questions and three runs per setting form a small exploratory sample selected by category and original order. DeepSeek replaces the original model. Dialogue completeness, client configuration, output limits and checkpoints are shared corrections. Original profile redundancy and retrieval duplicates remain. Results are not the paper's full benchmark, and simplified F1 is neither the official scorer nor a basis for generalizing to all LoCoMo data.
 
-## 充值后恢复原方案的明确授权（当前生效）
+## Final authorization and execution configuration
 
-用户取消12题B，恢复固定25题、5/10/20各3次，明确授权评测阶段450次/20元累计预算。无自动重试、扩额或提示词裁剪。原题单和统一快照哈希不变。
+After topping up the account, the user cancelled the 12-question B plan and restored the original 25 questions, capacities 5/10/20 and three runs each. The separate cumulative evaluation budget was explicitly authorized at 450 requests / CNY 20, with no automatic retries, increases or prompt cropping. The question list and snapshot hashes stayed unchanged. Execution has since completed under these limits.
 
-此前每次2.113152元来自(1048576×2+2000×8)/百万，是上下文容量整额，不是实际输入长度。现按官方文档下载的DeepSeek V4离线tokenizer完整chat template计数，trust_remote_code=False、truncation=False。预留输入tokens取max(ceil(完整离线tokens×1.25)+512, 完整请求UTF8字节数+1024)，再加最大2000输出tokens按峰值价预留。没有裁剪、压缩或丢弃任何提示词字段。实际usage高于预留、缺失、失败或截断立即停止，不按有效答案计分。
+The earlier CNY 2.113152 reservation, `(1048576 × 2 + 2000 × 8) / 1000000`, represented full context capacity, not actual input length. The final method counted the complete chat template using the official DeepSeek V4 offline tokenizer, `trust_remote_code=False`, `truncation=False`. Reserved input tokens were:
 
-官方tokenizer来源https://api-docs.deepseek.com/zh-cn/quick_start/token_usage/，压缩包https://cdn.deepseek.com/api-docs/deepseek_v4_tokenizer.zip。只下载离线资源，未发API探测。历史1052次请求离线计数与服务端最多差2输入tokens，均在预留内；75种回答提示词的预留0.105070–0.131766元。原始预留及新核查在runs/eval-prepared-conv26-v1/input-budget-audit.json，tokenizer文件哈希记录随实际运行配置保存。
+```text
+max(ceil(full_offline_tokens * 1.25) + 512,
+    full_request_utf8_bytes + 1024)
+```
 
-调度为每题轮转三个容量，重复1顺序5/10/20、重复2顺序10/20/5、重复3顺序20/5/10；9份独立记忆副本。各次25题顺序保持一致。活动耗时按各次自身问题累计，不将交错等待误算为该组处理耗时；跨度耗时另存。
+Maximum cost for 2,000 output tokens was added at recorded peak rates. No prompt field was cropped, compressed or dropped. Usage exceeding reservations, missing usage, failure or truncation would immediately stop execution and would not count as a valid answer.
 
-6项离线测试通过，包含交错顺序、完整输入不裁剪、金额闸门和截断明确标记。假SDK数据均在临时目录，实际结果不与之混合。失败题单独qNN.failed.json、valid_answer=false，完整评分拒绝失败/未完成运行。
+Tokenizer source: https://api-docs.deepseek.com/zh-cn/quick_start/token_usage/ ; archive: https://cdn.deepseek.com/api-docs/deepseek_v4_tokenizer.zip . Only offline resources were downloaded; no API probe was sent. Offline counts for the historical 1,052 requests differed from server input counts by at most two tokens and stayed within reservations. Reservations for 75 distinct answer prompts ranged from CNY 0.105070 to 0.131766. Original reservations and the new audit are in `runs/eval-prepared-conv26-v1/input-budget-audit.json`; tokenizer hashes accompany the actual execution configuration.
+
+Scheduling rotated capacities for each question: 5/10/20 in repetition 1, 10/20/5 in repetition 2 and 20/5/10 in repetition 3, using nine independent memory copies. Question order stayed the same. Active time sums each run's own question processing, excluding interleaved waiting; elapsed spans are stored separately.
+
+Six offline tests passed, covering interleaving, intact full inputs, budget checks and explicit truncation flags. Fake-SDK data remained in temporary directories, separate from real results. Failed questions would be stored as `qNN.failed.json` with `valid_answer=false`; final scoring rejects failed or incomplete runs.
