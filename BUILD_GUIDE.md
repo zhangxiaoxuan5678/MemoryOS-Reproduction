@@ -1,12 +1,12 @@
-# 正式建库入口与预算确认
+# Memory construction and budget controls
 
-当前已完成真实建库及独立验收：215页/419条发言。统一快照位置和哈希由STUDY_SNAPSHOT.json固定；下面保留各阶段执行方案与授权修正历史。不要重跑建库，也不要将本说明视作新的付费授权。
+**Construction and independent acceptance are complete: 215 pages / 419 utterances.** `STUDY_SNAPSHOT.json` pins the shared snapshot location and hashes. The sections below preserve historical execution plans and authorized corrections. The saved snapshot should be used for the reported study; this guide is not new spending authorization.
 
-## 入口行为
+## Entry-point behavior
 
-`eval/build_study.py` 默认只校验冻结输入、原嵌入模型文件哈希并显示范围。它不读取问题/评分文件，不加载 `.env`，不创建 OpenAI 客户端，也不联网。
+By default, `eval/build_study.py` only validates frozen inputs and the original embedding-file hashes, then displays the scope. It does not read questions/references, load `.env`, create an OpenAI client or connect to the network.
 
-在仓库根目录可安全预览：
+Preview from the repository root:
 
 ```sh
 ../.venv/bin/python -B eval/build_study.py \
@@ -16,69 +16,69 @@
   --max-requests 1200
 ```
 
-只有额外传入 `--allow-paid` 才进入真实建库。该参数应由执行者在用户明确确认本次范围后添加，当前未执行。
+Real construction additionally requires `--allow-paid`, to be added only for an explicitly authorized scope. The original execution has already finished; the flag's existence does not renew authorization.
 
-## 待确认的建库范围
+## Original proposed scope
 
-- 只建立 conv-26 的 215 页历史记忆，覆盖 419 条发言。
-- 使用当前配置模型、显式关闭思考模式。保持原温度、提示词和短中期容量等参数。
-- 建议先设 **最多 1200 次新 API 请求**，包括失败和结果未知的请求；SDK 自动重试为 0，单次超时 60 秒，单次输出最多 2000 tokens。
-- 1200 是硬请求上限，不是金额上限，也不保证足以建完。触限即停，未完成时不发布快照，不自动增加预算。
-- 仅基础连续性/元摘要/主题调用就有 644 次；关键词和画像调用依赖实际模型输出，不能把静态估算当实际用量。
-- 与先前 8 次试跑分开记账。先前试跑已结束，其剩余 2 次不用于此建库。
-- 使用独立 `runs/formal-conv26-v1/`，不覆盖测试库或旧结果。不运行 25 题评测，不下载新模型，不包含评分。
+- Build only `conv-26`: 215 historical memory pages covering 419 utterances.
+- Use the configured model with thinking explicitly disabled. Retain original temperatures, prompts and short-/mid-term capacities.
+- At most 1,200 new API requests, including failures and unknown outcomes. SDK retries are 0; per-call timeout is 60 seconds. The original proposal allowed at most 2,000 output tokens; later role-specific corrections are documented below.
+- A request limit is not a monetary limit or a completion guarantee. Stop at the limit, withhold incomplete snapshots and do not increase budgets automatically.
+- Basic continuity/metadata/topic calls alone account for 644 planned calls. Keywords and profiles depend on actual model outputs, so static estimates are not actual usage.
+- Account separately from the earlier eight-call trial. Its two unused requests were not transferred to construction.
+- Use independent `runs/formal-conv26-v1/` without overwriting test memory or old results. Construction excludes the 25-question evaluation, scoring and new model downloads.
 
-## 中断和恢复
+## Interruption and recovery
 
-- 每次发送前 fsync 请求账本。模型返回后记录响应、finish_reason、usage；异常只记录安全错误类型和 HTTP 状态，不记录 SDK 错误正文或密钥。
-- 每页在独立 work 目录中处理；所有步骤成功后，保存完整短中长期记忆和 updater 状态，再更新 `checkpoint.json`。失败页不提交。
-- 从相同命令、相同目录恢复时，校验配置、代码提交、源文件和模型哈希。工作区必须干净。
-- 成功响应按“输入页序号＋调用序号＋完整请求指纹”复用；重放不重复付费，也不重复计 token。指纹不匹配时停止。
-- 失败/结果未知的请求不自动重新发送，即使还有预算。需人工核对后另行决定；不要直接删除账本。
-- 硬预算耗尽后，同预算恢复只能重放，无法新发请求。当前不提供自动扩容；任何新增预算都需先明确授权并审查配置变更。
-- 目录发布后、指针更新前中断的孤立检查点移入 abandoned，保留证据，并通过已保存响应重新完成页面。
-- 进程级文件锁阻止两个执行者同时操作同一运行目录。
+- `fsync` the request ledger before sending. Record response, `finish_reason` and usage afterward. Errors retain safe error types and HTTP status, not SDK error bodies or keys.
+- Process each page in a separate work directory. Commit complete short-/mid-/long-term memory and updater state, then advance `checkpoint.json`, only when every step succeeds. Failed pages are not committed.
+- Recovery with the same command/directory checks configuration, code commit, source and model hashes. The working tree must be clean.
+- Reuse successful responses by input-page sequence, call sequence and full request fingerprint. Replay neither pays again nor recounts tokens. Fingerprint mismatches stop execution.
+- Failed or unknown requests are not automatically resent even if budget remains. They require review and a separate decision; deleting the ledger is not a recovery procedure.
+- With exhausted hard limits, same-budget recovery can only replay responses, not send new calls. New budget requires explicit authorization and reviewed configuration changes.
+- A checkpoint published before an interrupted pointer update is moved to `abandoned`, retained as evidence, and reconstructed using saved responses.
+- A process-level file lock prevents concurrent writers to the same run directory.
 
-## 快照验收
+## Snapshot acceptance
 
-逐页核对保存内容的说话人字段、日期、原始 session 和发言索引；原始每页必须具有唯一 page_id。跨主题引用同一页允许存在，但不算额外覆盖。
+Check saved speaker fields, dates, original sessions and utterance indices page by page. Every source page needs a unique `page_id`. Cross-topic references to one page are allowed but do not count as additional coverage.
 
-只有全部 215 页完整提交、短期无待处理页、文件哈希一致时，才发布 `snapshot/`。其中包含短/中/长期记忆、updater 状态、哈希清单、代码与配置、覆盖统计和真实用量。快照文件设置为只读，重开时仍核对哈希。
+Publish `snapshot/` only after all 215 pages are committed, short-term memory has no pending page and file hashes agree. Include memory files, updater state, hash manifest, source/configuration, coverage statistics and real usage. Snapshot files are read-only and rechecked when reopened.
 
-这里只验证原始页内容覆盖，不代表 LLM 摘要或画像事实必然正确。完整覆盖不能替代后续质量评测。
+These checks establish original-page coverage, not the factual correctness of every LLM summary or profile. Coverage does not replace quality evaluation.
 
-## 离线检查
+## Offline checks
 
 ```sh
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ../.venv/bin/python -B eval/checks/check_build_runtime.py
 ```
 
-七项测试使用假 SDK/假嵌入及临时目录，覆盖：预算/响应重放/失败不重试，未知响应与账本损坏，摘要校验，响应后中断恢复，孤立检查点恢复，预算中断与哈希损坏，长期画像检查点及覆盖审计。它们不构成真实建库结果。
+Seven tests use fake SDK/embedding objects and temporary directories: budgets/response replay/no failure retry; unknown responses and ledger corruption; summary validation; recovery after a response; orphaned checkpoints; budget interruption and hash corruption; long-term profile checkpoints and coverage audits. These are not real construction results.
 
-以上是建库阶段的历史说明。最终评测与评分已完成；实际保留原检索重复页和排序，没有引入去重。结果及安全离线复算入口见 README 与 EVALUATION_RESULTS.md。
+The later evaluation and scoring are complete. They retained original duplicate pages and sorting without adding deduplication. See `README.md` and `EVALUATION_RESULTS.md` for results and safe offline verification.
 
-## 已授权的人民币10元控制
+## Authorized CNY 10 construction budget
 
-用户已授权仅conv-26建库，不评测。新增 `--max-cost-cny 10`（与1200次请求双上限）。高峰缓存未命中单价固定为输入2元/百万、输出8元/百万。
+The user authorized construction only for `conv-26`, without evaluation, adding `--max-cost-cny 10` alongside the 1,200-request limit. Recorded peak, uncached rates were fixed at CNY 2 per million input tokens and CNY 8 per million output tokens.
 
-为避免本地tokenizer低估，不使用字符/token近似换算作费用闸门。每次发送前按公开1M上下文的保守解释1048576输入tokens，及完整2000输出tokens预留，共2.113152元。真实usage返回后按峰值价计已知成本，释放差额；结果未知保留全额预留并停止，不重试。剩余额度不足下一请求最大预留时提前停止，不自动扩额。该策略有意比基于文本长度的估计保守，可能在实际成本约7.89元时就停止。
+The initial gate did not use a character/token estimate. Each request reserved a conservative full-context 1,048,576 input tokens and 2,000 output tokens: CNY 2.113152. Known usage was charged at peak rates and the difference released. Unknown outcomes retained the full reservation and stopped, without retry. Insufficient remaining funds for the next maximum reservation caused an early stop without automatic expansion. This deliberately conservative policy could stop at actual estimated cost around CNY 7.89.
 
-已知用量若超过该上界、缺少usage或出现服务错误，停止并记录。控制基于本次核实的官方单价与上下文约束，不是提供商账户级硬限额。详见DIFFERENCES.md。
+Usage exceeding bounds, missing usage or service errors stopped execution and were recorded. These controls relied on official prices and context limits verified at execution time; they were not provider-account hard limits. See `DIFFERENCES.md`.
 
-## 本次已批准的第68页恢复
+## Authorized recovery at page 68: metadata limit 100 to 300
 
-用户已明确允许meta-summary的输出上限从100改为300，并仅重发请求333一次。恢复参数增加`--apply-meta300-correction`，其迁移仅匹配“67页已提交、333次已发送、最后为page:67:call:2的100-token截断”的已审计状态。
+The user explicitly allowed one resend of request 333 and raised the metadata-summary output limit from 100 to 300. `--apply-meta300-correction` applies only to the audited state: 67 committed pages, 333 sent requests, and a final 100-token truncation at `page:67:call:2`.
 
-原config.json和calls.jsonl前缀保持原样，另存config-meta300.json、correction-meta300.json、retry-authorizations.json及旧状态副本。预算仍为累计10元/1200次。修正适用于所有组，不改变实验变量。若获准重发再次截断，必须再次停止，不会用同一授权再次发送。
+Original `config.json` and the `calls.jsonl` prefix remain intact. New records include `config-meta300.json`, `correction-meta300.json`, `retry-authorizations.json` and copies of old state. Budgets remain cumulative CNY 10 / 1,200 requests. The correction is common to all groups, not an experimental variable. A repeated truncation requires another stop; the same authorization cannot be reused.
 
-## 画像合并4000输出上限的明确授权恢复
+## Authorized profile limit 2,000 to 4,000
 
-参数增加`--apply-profile4000-correction`。仅允许在已提交77页、账本408次、最后请求为page:77:call:8且2000输出截断的状态上迁移。原配置/日志保留，新配置为config-profile4000.json；原重发授权列表备份后追加408一次授权，首次重发为409。费用和请求数继续读同一账本。
+`--apply-profile4000-correction` applies only to 77 committed pages, 408 ledger requests and final `page:77:call:8` truncated at 2,000 output tokens. Original configuration/logs are retained. The new configuration is `config-profile4000.json`. After backing up the authorization list, one resend of 408 was appended and executed as request 409. Costs and request counts continue in the same ledger.
 
-只改gpt_update_profile的max_tokens为4000。发送前画像合并预留1048576输入及4000输出tokens费用2.129152元；只有画像合并角色允许超过2000输出。失败/未知/再次截断均停止，不自动重试。诊断文件保存在运行目录diagnostics，不能宣称提高上限已解决冗余。
+Only `gpt_update_profile.max_tokens` changes to 4,000. Its pre-request reservation is 1,048,576 input plus 4,000 output tokens, or CNY 2.129152. Only profile merging may exceed 2,000 output tokens. Failure, unknown outcomes or further truncation stop execution without automatic retry. Diagnostics remain under `diagnostics/`; higher limits must not be described as resolving redundancy.
 
-## 官方支持的16000画像合并输出上限
+## Authorized profile limit 4,000 to 16,000
 
-官方接口文档明确max_tokens取值1–393216，支持16000。用户授权仅重发请求697一次，从第142页恢复；新增`--apply-profile16000-correction`。迁移只匹配141页已完成、697次已发送且最后为page:141:call:8的4000-token截断状态。
+The official interface documentation at execution time specified `max_tokens` from 1 to 393216 and supported 16,000. The user authorized one resend of request 697, recovering from page 142 with `--apply-profile16000-correction`. Migration matches only 141 completed pages, 697 sent requests and final `page:141:call:8` truncated at 4,000 tokens.
 
-原账本/配置保留，新配置config-profile16000.json。画像合并发送前预留2.225152元（1048576输入、16000输出tokens）；其余仍2.113152元。累计10元/1200次不重置；预算不足或再次截断停止。统一快照会附带provenance文件及哈希，记录全部修正和冗余诊断。
+Original ledger/configuration are retained; the new configuration is `config-profile16000.json`. Profile merges reserve CNY 2.225152 for 1,048,576 input and 16,000 output tokens; other requests retain CNY 2.113152. Cumulative CNY 10 / 1,200-request limits do not reset. Insufficient budget or another truncation stops execution. The shared snapshot includes provenance files and hashes for every correction and redundancy diagnostic.
